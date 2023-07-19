@@ -1,5 +1,5 @@
 import numpy as np
-from utils import letterbox_image
+from lib.utils import letterbox_image
 
 class Resize(object):
     """Resize the image in accordance to `image_letter_box` function in darknet 

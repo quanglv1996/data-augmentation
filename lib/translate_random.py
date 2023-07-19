@@ -1,5 +1,5 @@
 import numpy as np
-from utils import clip_box
+from lib.utils import clip_box
 import random
 
 class RandomTranslate(object):

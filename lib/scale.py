@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from utils import clip_box
+from lib.utils import clip_box
 
 class Scale(object):
     """Scales the image    

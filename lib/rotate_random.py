@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import random
-from utils import get_corners, rotate_box, rotate_im, get_enclosing_box, clip_box
+from lib.utils import get_corners, rotate_box, rotate_im, get_enclosing_box, clip_box
 
 class RandomRotate(object):
     """Randomly rotates an image    

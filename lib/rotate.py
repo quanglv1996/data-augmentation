@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from utils import get_corners, rotate_box, rotate_im, get_enclosing_box, clip_box
+from lib.utils import get_corners, rotate_box, rotate_im, get_enclosing_box, clip_box
 
 class Rotate(object):
     """Rotates an image    
