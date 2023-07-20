@@ -1,8 +1,22 @@
 import numpy as np
 from PIL import Image
+import cv2
+from utils import draw_rect, get_info_bbox
 
 class GridMask(object):
-    def __init__(self, use_h, use_w, rotate=1, offset=False, ratio=.5, mode=0, prob=.7):
+    def __init__(self, use_h=True, use_w=True, rotate=1, offset=False, ratio=0.5, mode=0, prob=0.7):
+        """
+        Initialize the GridMask augmentation class with various parameters.
+
+        Args:
+            use_h (bool): If True, use grid masking along the height (vertical) dimension.
+            use_w (bool): If True, use grid masking along the width (horizontal) dimension.
+            rotate (int): The maximum rotation angle (in degrees) to apply to the mask.
+            offset (bool): If True, apply an offset to the image after masking.
+            ratio (float): The ratio of the mask size to the grid size.
+            mode (int): The mode of the mask. If 0, the mask will be black; if 1, the mask will be white.
+            prob (float): The probability of applying GridMask augmentation to an image.
+        """
         self.use_h = use_h
         self.use_w = use_w
         self.rotate = rotate
@@ -12,25 +26,47 @@ class GridMask(object):
         self.st_prob = prob
         self.prob = prob
 
-    def set_prob(self, prob=.5):
+    def set_prob(self, prob=0.5):
+        """
+        Set the probability of applying GridMask augmentation.
+
+        Args:
+            prob (float): The probability of applying GridMask augmentation to an image.
+        """
         self.prob = prob
 
     def __call__(self, img, bboxes):
+        """
+        Apply GridMask augmentation to the input image.
+
+        Args:
+            img (numpy.ndarray): The input image.
+            bboxes (numpy.ndarray): An array of bounding boxes associated with the image.
+
+        Returns:
+            numpy.ndarray: The augmented image with GridMask applied.
+            numpy.ndarray: The unchanged array of bounding boxes.
+        """
+        # Check if GridMask augmentation should be applied based on the probability
         if np.random.rand() > self.prob:
             return img, bboxes
+
+        # Get image dimensions
         h = img.shape[0]
         w = img.shape[1]
+
+        # Calculate the size of the grid
         self.d1 = 2
         self.d2 = min(h, w)
         hh = int(1.5 * h)
         ww = int(1.5 * w)
         d = np.random.randint(self.d1, self.d2)
-        # d = self.d
-        #        self.l = int(d*self.ratio+0.5)
         if self.ratio == 1:
             self.l = np.random.randint(1, d)
         else:
             self.l = min(max(int(d * self.ratio + 0.5), 1), d - 1)
+
+        # Create the mask
         mask = np.ones((hh, ww), np.float32)
         st_h = np.random.randint(d)
         st_w = np.random.randint(d)
@@ -45,11 +81,11 @@ class GridMask(object):
                 t = min(s + self.l, ww)
                 mask[:, s:t] *= 0
 
+        # Apply rotation to the mask
         r = np.random.randint(self.rotate)
         mask = Image.fromarray(np.uint8(mask))
         mask = mask.rotate(r)
         mask = np.asarray(mask)
-        #        mask = 1*(np.random.randint(0,3,[hh,ww])>0)
         mask = mask[(hh - h) // 2:(hh - h) // 2 + h, (ww - w) // 2:(ww - w) // 2 + w]
 
         if self.mode == 1:
@@ -57,10 +93,36 @@ class GridMask(object):
         mask = np.expand_dims(mask.astype(np.float), axis=2)
         mask = np.tile(mask, [1, 1, 3])
         mask = mask.astype(np.uint8)
+
+        # Apply the GridMask augmentation to the image
         if self.offset:
             offset = np.float(2 * (np.random.rand(h, w) - 0.5))
             offset = (1 - mask) * offset
             img = img * mask + offset
         else:
             img = img * mask
+
+        # Return the augmented image and unchanged bounding boxes
         return img, bboxes
+
+def main():
+    label_mapping = {
+        'disc': 0,
+        'adapter':1,
+        'guide':2,
+        'qr':3,
+        'gun':4,
+        'boom': 5,
+        'head': 6,
+    }
+    
+    path_img = 'D:/data-augmentation-for-object-detection/data/1a7ff59a026f50acbf91d546e8048637.jpg'
+    img = cv2.imread(path_img)
+    path_xml = 'D:/data-augmentation-for-object-detection/data/1a7ff59a026f50acbf91d546e8048637.xml'
+    bboxes = get_info_bbox(path_xml, label_mapping)
+    
+    img_res, bboxes_res = GridMask(True, True, 1, 0, 0.5, 1, 1.0)(img.copy(), bboxes.copy())
+    draw_rect(img_res, bboxes_res, img)
+    
+if __name__ == '__main__':
+    main()

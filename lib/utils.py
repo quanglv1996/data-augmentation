@@ -11,7 +11,7 @@ from PIL import Image
 import xml.etree.ElementTree as ET
 
 
-def draw_rect(im, cords, color = None):
+def draw_rect(im, cords, img_raw, color = None):
     """Draw the rectangle on the image
     
     Parameters
@@ -32,9 +32,10 @@ def draw_rect(im, cords, color = None):
         numpy image with bounding boxes drawn on it
         
     """
+    im = im.copy()
+    cords = np.array(cords)
     if len(im.shape) == 2:
         im = cv2.cvtColor(im, cv2.COLOR_GRAY2RGB)
-    im = im.copy()
     
     cords = cords[:,:4]
     cords = cords.reshape(-1,4)
@@ -43,14 +44,13 @@ def draw_rect(im, cords, color = None):
     for cord in cords:
         
         pt1, pt2 = (cord[0], cord[1]) , (cord[2], cord[3])
-                
         pt1 = int(pt1[0]), int(pt1[1])
         pt2 = int(pt2[0]), int(pt2[1])
     
-        im = cv2.rectangle(im.copy(), pt1, pt2, color, int(max(im.shape[:2])/400))
-    
-    plt.imshow(im)
-    plt.show()
+        im = cv2.rectangle(im, pt1, pt2, color, int(max(im.shape[:2])/400))
+        
+    img_debug = np.vstack((img_raw, im))
+    cv2.imwrite('_debug_img.jpg', img_debug)
     
     
 def bbox_area(bbox):
@@ -317,28 +317,40 @@ def letterbox_image(img, inp_dim):
 
 
 def get_info_bbox(xml_path, label_mapping):
+    """
+    Extracts bounding box information from an XML file.
+
+    Args:
+        xml_path (str): The path to the XML file containing bounding box information.
+        label_mapping (dict): A dictionary that maps class names to their corresponding class IDs.
+
+    Returns:
+        numpy.ndarray: An array containing bounding box coordinates and class IDs.
+    """
     bboxes = []
-    # Đọc nội dung của tệp XML
+    # Read the contents of the XML file
     xml_text = ET.parse(xml_path)
     root = xml_text.getroot()
     for obj in root.iter('object'):
-        # Lấy tên lớp của đối tượng từ tệp XML
+        # Get the class name of the object from the XML file
         class_name = obj.find('name').text
         try:
-            # Tìm id của lớp từ label_mapping
+            # Find the class ID from the label_mapping dictionary
             id_class = label_mapping[class_name]
-        except:
-            print('Not found class name: {}'.format(class_name))
+        except KeyError:
+            print(f'Not found class name: {class_name}')
+            continue
         for bbox in obj.iter('bndbox'):
-            # Lấy thông tin tọa độ của hộp giới hạn từ tệp XML
+            # Get the bounding box coordinates from the XML file
             xmin = int(bbox.find('xmin').text)
             ymin = int(bbox.find('ymin').text)
             xmax = int(bbox.find('xmax').text)
             ymax = int(bbox.find('ymax').text)
-            # Kiểm tra xem hộp giới hạn có kích thước hợp lệ không
-            assert xmax > xmin and ymax > ymin, f"Box size error !: (xmin, ymin, xmax, ymax): {xmin, ymin, xmax, ymax}"
-            # Thêm thông tin của hộp giới hạn và id lớp vào danh sách bboxes
+            # Check if the bounding box has valid dimensions
+            assert xmax > xmin and ymax > ymin, f"Box size error!: (xmin, ymin, xmax, ymax): {xmin, ymin, xmax, ymax}"
+            # Add the bounding box information and class ID to the bboxes list
             bboxes.append((xmin, ymin, xmax, ymax, id_class))
-    # Chuyển danh sách bboxes thành mảng numpy với dtype là float32
+    # Convert the bboxes list to a numpy array with dtype float32
     bboxes = np.array(bboxes, dtype=np.float32)
+    
     return bboxes

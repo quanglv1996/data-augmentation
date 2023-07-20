@@ -1,54 +1,77 @@
 import numpy as np
 from horizontal_flip import HorizontalFlip
 import cv2
+from utils import draw_rect, get_info_bbox
 
 class Shear(object):
-    """Shears an image in horizontal direction   
-    
-    
-    Bounding boxes which have an area of less than 25% in the remaining in the 
-    transformed image is dropped. The resolution is maintained, and the remaining
-    area if any is filled by black color.
-    
-    Parameters
-    ----------
-    shear_factor: float
-        Factor by which the image is sheared in the x-direction
-       
-    Returns
-    -------
-    
-    numpy.ndaaray
-        Sheared image in the numpy format of shape `HxWxC`
-    
-    numpy.ndarray
-        Tranformed bounding box co-ordinates of the format `n x 4` where n is 
-        number of bounding boxes and 4 represents `x1,y1,x2,y2` of the box
-        
-    """
+    def __init__(self, shear_factor=0.2):
+        """
+        Initialize the Shear data augmentation object.
 
-    def __init__(self, shear_factor = 0.2):
+        Args:
+            shear_factor (float): The shear factor to apply to the image. Positive values shear the image towards the
+                                  right, and negative values shear the image towards the left.
+        """
+        # Initialize the object with the shear factor
         self.shear_factor = shear_factor
-        
-    
+
     def __call__(self, img, bboxes):
-        
+        """
+        Apply shear transformation to the input image and bounding boxes.
+
+        Args:
+            img (numpy.ndarray): The input image.
+            bboxes (numpy.ndarray): Bounding boxes associated with the image.
+
+        Returns:
+            numpy.ndarray: The sheared image.
+            numpy.ndarray: The adjusted bounding boxes.
+        """
+        # Retrieve the shear factor
         shear_factor = self.shear_factor
+
+        # Apply horizontal flip if the shear factor is negative
         if shear_factor < 0:
             img, bboxes = HorizontalFlip()(img, bboxes)
 
-        
-        M = np.array([[1, abs(shear_factor), 0],[0,1,0]])
-                
-        nW =  img.shape[1] + abs(shear_factor*img.shape[0])
-        
-        bboxes[:,[0,2]] += ((bboxes[:,[1,3]])*abs(shear_factor)).astype(int) 
-        
+        # Create an affine transformation matrix for shear
+        M = np.array([[1, abs(shear_factor), 0], [0, 1, 0]])
 
+        # Calculate the new width after shearing
+        nW = img.shape[1] + abs(shear_factor * img.shape[0])
+
+        # Adjust bounding boxes based on shear factor
+        bboxes[:, [0, 2]] += ((bboxes[:, [1, 3]]) * abs(shear_factor)).astype(int)
+
+        # Apply the shear transformation to the image
         img = cv2.warpAffine(img, M, (int(nW), img.shape[0]))
-        
+
+        # Undo horizontal flip if the shear factor was negative
         if shear_factor < 0:
-             img, bboxes = HorizontalFlip()(img, bboxes)
-             
-        
+            img, bboxes = HorizontalFlip()(img, bboxes)
+
         return img, bboxes
+
+    
+def main():
+    label_mapping = {
+        'disc': 0,
+        'adapter':1,
+        'guide':2,
+        'qr':3,
+        'gun':4,
+        'boom': 5,
+        'head': 6,
+    }
+    
+    path_img = 'D:/data-augmentation-for-object-detection/data/1a7ff59a026f50acbf91d546e8048637.jpg'
+    img = cv2.imread(path_img)
+    path_xml = 'D:/data-augmentation-for-object-detection/data/1a7ff59a026f50acbf91d546e8048637.xml'
+    bboxes = get_info_bbox(path_xml, label_mapping)
+    
+    
+    img_res, bboxes_res = Shear(0.1)(img.copy(), bboxes.copy())
+    draw_rect(img_res, bboxes_res, img)
+    
+if __name__ == '__main__':
+    main()

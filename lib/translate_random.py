@@ -1,78 +1,98 @@
+import sys
+sys.path.append('../.')
 import numpy as np
-from lib.utils import clip_box
+import cv2
 import random
+from utils import draw_rect, get_info_bbox, clip_box
 
 class RandomTranslate(object):
-    """Randomly Translates the image    
-    
-    
-    Bounding boxes which have an area of less than 25% in the remaining in the 
-    transformed image is dropped. The resolution is maintained, and the remaining
-    area if any is filled by black color.
-    
-    Parameters
-    ----------
-    translate: float or tuple(float)
-        if **float**, the image is translated by a factor drawn 
-        randomly from a range (1 - `translate` , 1 + `translate`). If **tuple**,
-        `translate` is drawn randomly from values specified by the 
-        tuple
-        
-    Returns
-    -------
-    
-    numpy.ndaaray
-        Translated image in the numpy format of shape `HxWxC`
-    
-    numpy.ndarray
-        Tranformed bounding box co-ordinates of the format `n x 4` where n is 
-        number of bounding boxes and 4 represents `x1,y1,x2,y2` of the box
-        
-    """
+    def __init__(self, translate=0.2, diff=False):
+        """
+        Randomly translates the input image and its corresponding bounding boxes.
 
-    def __init__(self, translate = 0.2, diff = False):
+        Args:
+            translate (float or tuple): If float, the same translation factor will be used for both x and y axes.
+                                       If tuple, it should be (min_factor, max_factor) specifying the range of
+                                       translation factors for both x and y axes. The factors should be between 0 and 1.
+            diff (bool): If True, uses different translation factors for x and y axes. Default is False.
+        """
         self.translate = translate
         
         if type(self.translate) == tuple:
             assert len(self.translate) == 2, "Invalid range"  
-            assert self.translate[0] > 0 & self.translate[0] < 1
-            assert self.translate[1] > 0 & self.translate[1] < 1
-
+            assert 0 < self.translate[0] < 1, "Translate factor should be between 0 and 1"
+            assert 0 < self.translate[1] < 1, "Translate factor should be between 0 and 1"
         else:
-            assert self.translate > 0 and self.translate < 1
+            assert 0 < self.translate < 1, "Translate factor should be between 0 and 1"
             self.translate = (-self.translate, self.translate)
             
         self.diff = diff
 
     def __call__(self, img, bboxes):        
-        #Chose a random digit to scale by 
+        """
+        Applies random translation to the input image and its bounding boxes.
+
+        Args:
+            img (numpy array): The input image as a numpy array.
+            bboxes (numpy array): An array of bounding boxes in the format [xmin, ymin, xmax, ymax, class_id].
+
+        Returns:
+            numpy array: Translated image.
+            numpy array: Updated bounding boxes after translation.
+        """
         img_shape = img.shape
-        
-        #translate the image
-        
-        #percentage of the dimension of the image to translate
+     
+        # Randomly sample translation factors for x and y axes
         translate_factor_x = random.uniform(*self.translate)
         translate_factor_y = random.uniform(*self.translate)
         
+        # If self.diff is True, use different translation factors for x and y axes
         if not self.diff:
             translate_factor_y = translate_factor_x
             
-        canvas = np.zeros(img_shape).astype(np.uint8)
+        # Create a canvas of zeros with the same shape as the input image
+        canvas = np.zeros(img_shape, dtype=np.uint8)
     
-        corner_x = int(translate_factor_x*img.shape[1])
-        corner_y = int(translate_factor_y*img.shape[0])
-        
-        #change the origin to the top-left corner of the translated box
-        orig_box_cords =  [max(0,corner_y), max(corner_x,0), min(img_shape[0], corner_y + img.shape[0]), min(img_shape[1],corner_x + img.shape[1])]
+        # Calculate the corner coordinates of the translated image region
+        corner_x = int(translate_factor_x * img.shape[1])
+        corner_y = int(translate_factor_y * img.shape[0])
+   
+        # Calculate the coordinates of the original image region that will be placed in the canvas
+        orig_box_cords = [max(0, corner_y), max(corner_x, 0), min(img_shape[0], corner_y + img.shape[0]), min(img_shape[1], corner_x + img.shape[1])]
     
-    
-        mask = img[max(-corner_y, 0):min(img.shape[0], -corner_y + img_shape[0]), max(-corner_x, 0):min(img.shape[1], -corner_x + img_shape[1]),:]
-        canvas[orig_box_cords[0]:orig_box_cords[2], orig_box_cords[1]:orig_box_cords[3],:] = mask
+        # Extract the image region to be translated
+        mask = img[max(-corner_y, 0):min(img.shape[0], -corner_y + img_shape[0]), max(-corner_x, 0):min(img.shape[1], -corner_x + img_shape[1]), :]
+        # Paste the translated region in the canvas
+        canvas[orig_box_cords[0]:orig_box_cords[2], orig_box_cords[1]:orig_box_cords[3], :] = mask
         img = canvas
         
-        bboxes[:,:4] += [corner_x, corner_y, corner_x, corner_y]
+        # Update the bounding box coordinates based on the translation
+        bboxes[:, :4] += [corner_x, corner_y, corner_x, corner_y]
         
-        
-        bboxes = clip_box(bboxes, [0,0,img_shape[1], img_shape[0]], 0.25)
+        # Clip the bounding boxes to stay within the image boundaries
+        bboxes = clip_box(bboxes, [0, 0, img_shape[1], img_shape[0]], 0.25)
         
         return img, bboxes
+    
+def main():
+    label_mapping = {
+        'disc': 0,
+        'adapter':1,
+        'guide':2,
+        'qr':3,
+        'gun':4,
+        'boom': 5,
+        'head': 6,
+    }
+    
+    path_img = 'D:/data-augmentation-for-object-detection/data/1a7ff59a026f50acbf91d546e8048637.jpg'
+    img = cv2.imread(path_img)
+    path_xml = 'D:/data-augmentation-for-object-detection/data/1a7ff59a026f50acbf91d546e8048637.xml'
+    bboxes = get_info_bbox(path_xml, label_mapping)
+    
+    
+    img_res, bboxes_res = RandomTranslate(0.2)(img.copy(), bboxes.copy())
+    draw_rect(img_res, bboxes_res, img)
+    
+if __name__ == '__main__':
+    main()
