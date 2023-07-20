@@ -116,26 +116,26 @@ config_augmentation = {
         'scale_y': True
     },
     'Sequence': {
-        'flag': True
+        'used': True
     },
     'RandomShear': {
-        'flag': True,
+        'used': True,
         'shear_factor': 0.5
     },
     'Shear': {
-        'flag': True,
+        'used': True,
         'shear_factor': 0.5
     },
     'SmallObjectAugmentation': {
-        'flag': True,
+        'used': True,
     },
     'RandomTranslate': {
-        'flag': True,
+        'used': True,
         'translate': 0.2,
         'diff': True
     },
     'Translate': {
-        'flag': True,
+        'used': True,
         'translate': 0.2,
         'diff': True
     },
