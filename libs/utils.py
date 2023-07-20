@@ -1,5 +1,6 @@
 import cv2
 import os
+import random
 import shutil
 import numpy as np
 import xml.etree.ElementTree as ET
@@ -394,7 +395,7 @@ def bndbox2yololine(box, img):
     # Return the bounding box in YOLO format as a tuple (class_id, xcen, ycen, w_, h_)
     return float(id_class), xcen, ycen, w_, h_
 
-def save_yolo_format(path_save, bboxes, img):
+def save_yolo_format(img ,bboxes, path_save_img, path_save_label):
     """
     Save bounding boxes in YOLO format to a file.
 
@@ -404,16 +405,19 @@ def save_yolo_format(path_save, bboxes, img):
         img (numpy array): The input image as a numpy array.
     """
     # Open the output file in write mode
-    out_file = open(path_save, 'w')
+
+    name = format(random.getrandbits(128), 'x')
+    img_path = os.path.join(path_save_img, name + '.jpg')
+    txt_path = os.path.join(path_save_label, name + '.txt')
     
-    # Convert and write each bounding box in YOLO format to the file
-    for box in list(bboxes):
-        # Convert the bounding box coordinates to YOLO format
-        class_index, xcen, ycen, w, h = bndbox2yololine(box, img)
-        
-        # Write the bounding box in YOLO format to the file
-        out_file.write("%d %.6f %.6f %.6f %.6f\n" % (class_index, xcen, ycen, w, h))
+    with open(txt_path, "w") as f:
+        # Convert and write each bounding box in YOLO format to the file
+        for box in list(bboxes):
+            # Convert the bounding box coordinates to YOLO format
+            class_index, xcen, ycen, w, h = bndbox2yololine(box, img)
+            
+            # Write the bounding box in YOLO format to the file
+            f.write("%d %.6f %.6f %.6f %.6f\n" % (class_index, xcen, ycen, w, h))
+    cv2.imwrite(img_path, img)
     
-    # Close the output file
-    out_file.close()
     

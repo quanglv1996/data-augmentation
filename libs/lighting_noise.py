@@ -4,7 +4,7 @@ import cv2
 from PIL import Image
 import random
 
-class Lighting_Noise(object):
+class LightingNoise(object):
     def __init__(self):
         """
         Initialize the Lighting_Noise data augmentation object.

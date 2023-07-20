@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 from PIL import Image
 
-class Adjust_Saturation(object):
+class AdjustSaturation(object):
     def __init__(self, saturation_factor=1.5):
         """
         Initialize the Adjust_Saturation augmentation class.

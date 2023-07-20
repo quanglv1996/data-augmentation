@@ -1,7 +1,7 @@
 import torchvision.transforms.functional as F
 import numpy as np
 
-class Rotate_Only_Bboxes(object):
+class RotateOnlyBboxes(object):
     def __init__(self, angle=5):
         """
         Initialize the Rotate_Only_Bboxes data augmentation object.

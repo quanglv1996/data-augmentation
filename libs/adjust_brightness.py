@@ -4,7 +4,7 @@ import numpy as np
 import cv2
 from PIL import Image
 
-class Adjust_Brightness(object):
+class AdjustBrightness(object):
     def __init__(self, brightness_factor=1.5):
         """
         Initialize the Adjust_Brightness augmentation class.

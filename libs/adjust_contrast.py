@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 from PIL import Image
 
-class Adjust_Contrast(object):
+class AdjustContrast(object):
     def __init__(self, contrast_factor=1.5):
         """
         Initialize the Adjust_Contrast augmentation class.
