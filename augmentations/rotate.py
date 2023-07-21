@@ -1,26 +1,16 @@
 import cv2
 import numpy as np
-import random
-from libs.utils import get_corners, rotate_box, rotate_im, get_enclosing_box, clip_box
+from utils.utils import get_corners, rotate_box, rotate_im, get_enclosing_box, clip_box
 
-class RandomRotate(object):
-    def __init__(self, angle=10, random=True):
+class Rotate(object):
+    def __init__(self, angle):
         """
-        Initialize the RandomRotate data augmentation object.
+        Initialize the Rotate data augmentation object.
 
         Args:
-            angle (float or tuple): The specified rotation angle in degrees or a tuple representing the range of random rotation angles.
-            random (bool): If True, randomly select an angle from the specified range. If False, use the specified angle.
+            angle (float): The specified rotation angle in degrees for rotating the image and bounding boxes.
         """
-        self.random = random
         self.angle = angle
-
-        # If random flag is True, create an angle range for random rotation
-        if self.random:
-            if type(self.angle) == tuple:
-                assert len(self.angle) == 2, "Invalid range"
-            else:
-                self.angle = (-self.angle, self.angle)
 
     def __call__(self, img, bboxes):
         """
@@ -34,11 +24,8 @@ class RandomRotate(object):
             numpy.ndarray: The rotated image.
             numpy.ndarray: The adjusted bounding boxes.
         """
-        # If random flag is True, randomly select an angle from the specified range
-        if self.random:
-            angle = random.uniform(*self.angle)
-        else:
-            angle = self.angle
+        # Get the rotation angle from the object's attribute
+        angle = self.angle
 
         # Get the width and height of the image
         w, h = img.shape[1], img.shape[0]
@@ -46,14 +33,12 @@ class RandomRotate(object):
         # Calculate the center coordinates of the image
         cx, cy = w // 2, h // 2
 
-        # Rotate the image
-        img = rotate_im(img, angle)
-
         # Get the corners of the bounding boxes and add the class labels
         corners = get_corners(bboxes)
         corners = np.hstack((corners, bboxes[:, 4:]))
 
-        # Rotate the bounding boxes
+        # Rotate the image and the bounding boxes
+        img = rotate_im(img, angle)
         corners[:, :8] = rotate_box(corners[:, :8], angle, cx, cy, h, w)
 
         # Get the new bounding box that encloses the rotated boxes

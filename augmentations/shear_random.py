@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import random
-from libs.horizontal_flip import HorizontalFlip
+from augmentations.horizontal_flip import HorizontalFlip
 
 class RandomShear(object):
     def __init__(self, shear_factor=0.2):

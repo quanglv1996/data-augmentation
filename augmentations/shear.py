@@ -1,5 +1,5 @@
 import numpy as np
-from libs.horizontal_flip import HorizontalFlip
+from augmentations.horizontal_flip import HorizontalFlip
 import cv2
 
 class Shear(object):

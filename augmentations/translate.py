@@ -1,5 +1,5 @@
 import numpy as np
-from libs.utils import clip_box
+from utils.utils import clip_box
 
 class Translate(object):
     def __init__(self, translate_x=0.2, translate_y=0.2, diff=False):

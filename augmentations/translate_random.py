@@ -1,6 +1,6 @@
 import numpy as np
 import random
-from libs.utils import clip_box
+from utils.utils import clip_box
 
 class RandomTranslate(object):
     def __init__(self, translate=0.2, diff=False):

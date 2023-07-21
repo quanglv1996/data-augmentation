@@ -1,5 +1,5 @@
 import numpy as np
-from libs.utils import letterbox_image
+from utils.utils import letterbox_image
 
 class Resize(object):
     def __init__(self, inp_dim):

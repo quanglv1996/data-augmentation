@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from libs.utils import clip_box
+from utils.utils import clip_box
 
 class Scale(object):
 
