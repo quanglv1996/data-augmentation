@@ -310,7 +310,7 @@ def letterbox_image(img, inp_dim):
     return canvas
 
 
-def get_info_bbox(xml_path, label_mapping):
+def get_info_bbox_pascalvoc(xml_path, label_mapping):
     """
     Extracts bounding box information from an XML file.
 
@@ -349,6 +349,51 @@ def get_info_bbox(xml_path, label_mapping):
     
     return bboxes
 
+import numpy as np
+
+def get_info_bbox_yolo(img, txt_path):
+    """
+    Extracts bounding box information from a YOLO format file and converts it to a numpy array.
+
+    Parameters:
+        img (numpy.ndarray): The input image as a numpy array.
+        txt_path (str): Path to the YOLO format file containing bounding box information.
+
+    Returns:
+        numpy.ndarray: An array containing bounding box information in the format: [xmin, ymin, xmax, ymax, class_id].
+    """
+    # List to store the bounding boxes and their corresponding class information
+    bboxes = []
+    
+    # Read the image from file
+    image = img.copy()
+    
+    # Read the bounding box information from the YOLO format file
+    with open(txt_path, 'r') as f:
+        lines = f.readlines()
+
+    for line in lines:
+        # Extract bounding box information from the line
+        id_class, x, y, width, height = map(float, line.strip().split())
+        id_class = int(id_class)
+        
+        # Calculate the coordinates of the bounding box on the image
+        xmin = int((x - width / 2) * image.shape[1])
+        ymin = int((y - height / 2) * image.shape[0])
+        xmax = int((x + width / 2) * image.shape[1])
+        ymax = int((y + height / 2) * image.shape[0])
+        
+        # Check the validity of the bounding box
+        assert xmax > xmin and ymax > ymin, f"Box size error!: (xmin, ymin, xmax, ymax): {xmin, ymin, xmax, ymax}"
+        
+        # Add the bounding box information and its class to the bboxes list
+        bboxes.append((xmin, ymin, xmax, ymax, id_class))
+        
+    # Convert the bboxes list to a numpy array and return
+    bboxes = np.array(bboxes, dtype=np.float32)
+    return bboxes
+
+
 def create_folder(path):
     """
     Create a new folder at the specified path or remove and recreate it if it already exists.
@@ -366,6 +411,7 @@ def create_folder(path):
     
     # Create a new folder at the specified path
     os.mkdir(path)
+    
     
 def bndbox2yololine(box, img):
     """
@@ -395,6 +441,7 @@ def bndbox2yololine(box, img):
     # Return the bounding box in YOLO format as a tuple (class_id, xcen, ycen, w_, h_)
     return float(id_class), xcen, ycen, w_, h_
 
+
 def save_yolo_format(img ,bboxes, path_save_img, path_save_label):
     """
     Save bounding boxes in YOLO format to a file.
@@ -419,9 +466,100 @@ def save_yolo_format(img ,bboxes, path_save_img, path_save_label):
             # Write the bounding box in YOLO format to the file
             f.write("%d %.6f %.6f %.6f %.6f\n" % (class_index, xcen, ycen, w, h))
     cv2.imwrite(img_path, img)
-    
-    
-def save_pascalvoc_format(img ,bboxes, path_save_img, path_save_label):
-    pass
-    
-    
+
+
+def yolo_to_cor(box, w, h):
+        x1, y1 = int((box[0] - box[2]/2)*w), int((box[1] - box[3]/2)*h)
+        x2, y2 = int((box[0] + box[2]/2)*w), int((box[1] + box[3]/2)*h)
+        return abs(x1), abs(y1), abs(x2), abs(y2)
+
+
+
+def create_xml_tree(path_img, w, h, voc_labels):
+        '''
+        Create file xml
+        '''
+        # Create root
+        root = ET.Element("annotations")
+        ET.SubElement(root, "filename").text = path_img
+        ET.SubElement(root, "folder").text = "images"
+        size = ET.SubElement(root, "size")
+        ET.SubElement(size, "width").text = str(w)
+        ET.SubElement(size, "height").text = str(h)
+        ET.SubElement(size, "depth").text = "3"
+
+        # Create object annotations
+        for voc_label in voc_labels:
+            obj = ET.SubElement(root, "object")
+            ET.SubElement(obj, "name").text = voc_label[0]
+            ET.SubElement(obj, "pose").text = "Unspecified"
+            ET.SubElement(obj, "truncated").text = str(0)
+            ET.SubElement(obj, "difficult").text = str(0)
+            bbox = ET.SubElement(obj, "bndbox")
+            ET.SubElement(bbox, "xmin").text = str(voc_label[1])
+            ET.SubElement(bbox, "ymin").text = str(voc_label[2])
+            ET.SubElement(bbox, "xmax").text = str(voc_label[3])
+            ET.SubElement(bbox, "ymax").text = str(voc_label[4])
+        return root
+
+def create_label_from_txt(self, path_img, path_txt, path_save):
+        # Read img get w, h image
+        img = cv2.imread(path_img)
+        h, w = img.shape[:2]
+
+        # Read file txt yolo format
+        with open(path_txt, 'r') as file:
+            lines = file.readlines()
+            voc_labels = []
+            for line in lines:
+                voc = []
+                line = line.strip()
+                elems = line.split(' ')
+                if (len(elems) <= 4):
+                    continue
+                try:
+                    id = int(elems[0])
+                    box = list(map(float, elems[1:5]))
+                except ValueError as e:
+                    print(e)
+                voc.append(self.class_mapping.get(id))
+                x1, y1, x2, y2 = self.yolo_to_cor(box, w, h)
+                voc.append(x1)
+                voc.append(y1)
+                voc.append(x2)
+                voc.append(y2)
+                voc_labels.append(voc)
+
+        # Create xml tree
+        root = self.create_xml_tree(path_img, w, h, voc_labels)
+        tree = ET.ElementTree(root)
+        out_path = "{}/{}.xml".format(path_save,
+                                      os.path.basename(path_img).split('.')[0])
+        tree.write(out_path)
+
+
+def save_pascalvoc_format(img ,bboxes, path_save_img, path_save_label,mapping_labels):
+    path_img = os.path.join(self.labeling_dir, str(
+            random.getrandbits(128)) + '.jpg')
+
+    h, w = img.shape[:2]
+    bboxes = res.pandas().xyxy[0].values.tolist()
+    if len(bboxes) != 0:
+        voc_labels = []
+        for xmin, ymin, xmax, ymax, _, id_class, _ in bboxes:
+            voc = []
+            voc.append(self.class_mapping.get(int(id_class)))
+            voc.append(int(round(xmin)))
+            voc.append(int(round(ymin)))
+            voc.append(int(round(xmax)))
+            voc.append(int(round(ymax)))
+            voc_labels.append(voc)
+
+        # Create xml tree
+        root = self.create_xml_tree(path_img, w, h, voc_labels)
+        tree = ET.ElementTree(root)
+        out_path = "{}/{}.xml".format(self.labeling_dir,
+                                        os.path.basename(path_img).split('.')[0])
+        tree.write(out_path)
+        cv2.imwrite(path_img, img)
+
