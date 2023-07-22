@@ -384,10 +384,11 @@ def get_info_bbox_yolo(img, txt_path):
         ymax = int((y + height / 2) * image.shape[0])
         
         # Check the validity of the bounding box
-        assert xmax > xmin and ymax > ymin, f"Box size error!: (xmin, ymin, xmax, ymax): {xmin, ymin, xmax, ymax}"
-        
-        # Add the bounding box information and its class to the bboxes list
-        bboxes.append((xmin, ymin, xmax, ymax, id_class))
+        if xmax < xmin or ymax < ymin:
+            continue
+        else:
+            # Add the bounding box information and its class to the bboxes list
+            bboxes.append((xmin, ymin, xmax, ymax, id_class))
         
     # Convert the bboxes list to a numpy array and return
     bboxes = np.array(bboxes, dtype=np.float32)
@@ -469,97 +470,109 @@ def save_yolo_format(img ,bboxes, path_save_img, path_save_label):
 
 
 def yolo_to_cor(box, w, h):
-        x1, y1 = int((box[0] - box[2]/2)*w), int((box[1] - box[3]/2)*h)
-        x2, y2 = int((box[0] + box[2]/2)*w), int((box[1] + box[3]/2)*h)
-        return abs(x1), abs(y1), abs(x2), abs(y2)
+    """
+    Convert YOLO format bounding box coordinates to (x1, y1, x2, y2) format.
 
+    Parameters:
+        box (tuple): A tuple containing the YOLO format bounding box information (x, y, width, height).
+        w (int): The width of the image in pixels.
+        h (int): The height of the image in pixels.
+
+    Returns:
+        tuple: A tuple containing the bounding box coordinates in (x1, y1, x2, y2) format.
+    """
+    # Extract YOLO format bounding box information (x, y, width, height)
+    x, y, width, height = box
+    
+    # Calculate the coordinates of the top-left and bottom-right corners of the bounding box
+    x1 = int((x - width / 2) * w)
+    y1 = int((y - height / 2) * h)
+    x2 = int((x + width / 2) * w)
+    y2 = int((y + height / 2) * h)
+    
+    # Ensure that the coordinates are positive values
+    x1, y1, x2, y2 = abs(x1), abs(y1), abs(x2), abs(y2)
+    
+    # Return the bounding box coordinates in (x1, y1, x2, y2) format
+    return x1, y1, x2, y2
 
 
 def create_xml_tree(path_img, w, h, voc_labels):
-        '''
-        Create file xml
-        '''
-        # Create root
-        root = ET.Element("annotations")
-        ET.SubElement(root, "filename").text = path_img
-        ET.SubElement(root, "folder").text = "images"
-        size = ET.SubElement(root, "size")
-        ET.SubElement(size, "width").text = str(w)
-        ET.SubElement(size, "height").text = str(h)
-        ET.SubElement(size, "depth").text = "3"
+    """
+    Create an XML tree for object annotations in VOC format.
 
-        # Create object annotations
-        for voc_label in voc_labels:
-            obj = ET.SubElement(root, "object")
-            ET.SubElement(obj, "name").text = voc_label[0]
-            ET.SubElement(obj, "pose").text = "Unspecified"
-            ET.SubElement(obj, "truncated").text = str(0)
-            ET.SubElement(obj, "difficult").text = str(0)
-            bbox = ET.SubElement(obj, "bndbox")
-            ET.SubElement(bbox, "xmin").text = str(voc_label[1])
-            ET.SubElement(bbox, "ymin").text = str(voc_label[2])
-            ET.SubElement(bbox, "xmax").text = str(voc_label[3])
-            ET.SubElement(bbox, "ymax").text = str(voc_label[4])
-        return root
+    Parameters:
+        path_img (str): The path to the image file.
+        w (int): The width of the image.
+        h (int): The height of the image.
+        voc_labels (list): A list of tuples containing VOC label information.
+                           Each tuple should have the format (label_name, xmin, ymin, xmax, ymax).
 
-def create_label_from_txt(self, path_img, path_txt, path_save):
-        # Read img get w, h image
-        img = cv2.imread(path_img)
-        h, w = img.shape[:2]
+    Returns:
+        xml.etree.ElementTree.Element: The root element of the XML tree.
+    """
+    # Create the root element
+    root = ET.Element("annotations")
+    ET.SubElement(root, "filename").text = path_img
+    ET.SubElement(root, "folder").text = "images"
+    size = ET.SubElement(root, "size")
+    ET.SubElement(size, "width").text = str(w)
+    ET.SubElement(size, "height").text = str(h)
+    ET.SubElement(size, "depth").text = "3"
 
-        # Read file txt yolo format
-        with open(path_txt, 'r') as file:
-            lines = file.readlines()
-            voc_labels = []
-            for line in lines:
-                voc = []
-                line = line.strip()
-                elems = line.split(' ')
-                if (len(elems) <= 4):
-                    continue
-                try:
-                    id = int(elems[0])
-                    box = list(map(float, elems[1:5]))
-                except ValueError as e:
-                    print(e)
-                voc.append(self.class_mapping.get(id))
-                x1, y1, x2, y2 = self.yolo_to_cor(box, w, h)
-                voc.append(x1)
-                voc.append(y1)
-                voc.append(x2)
-                voc.append(y2)
-                voc_labels.append(voc)
+    # Create object annotations
+    for voc_label in voc_labels:
+        obj = ET.SubElement(root, "object")
+        ET.SubElement(obj, "name").text = voc_label[0]
+        ET.SubElement(obj, "pose").text = "Unspecified"
+        ET.SubElement(obj, "truncated").text = str(0)
+        ET.SubElement(obj, "difficult").text = str(0)
+        bbox = ET.SubElement(obj, "bndbox")
+        ET.SubElement(bbox, "xmin").text = str(voc_label[1])
+        ET.SubElement(bbox, "ymin").text = str(voc_label[2])
+        ET.SubElement(bbox, "xmax").text = str(voc_label[3])
+        ET.SubElement(bbox, "ymax").text = str(voc_label[4])
 
-        # Create xml tree
-        root = self.create_xml_tree(path_img, w, h, voc_labels)
-        tree = ET.ElementTree(root)
-        out_path = "{}/{}.xml".format(path_save,
-                                      os.path.basename(path_img).split('.')[0])
-        tree.write(out_path)
+    return root
 
 
-def save_pascalvoc_format(img ,bboxes, path_save_img, path_save_label,mapping_labels):
-    path_img = os.path.join(self.labeling_dir, str(
-            random.getrandbits(128)) + '.jpg')
+def save_pascalvoc_format(img, bboxes, path_save_img, path_save_label, mapping_labels):
+    """
+    Save object annotations and image in Pascal VOC format.
 
+    Parameters:
+        img (numpy.ndarray): The input image.
+        bboxes (numpy.ndarray): An array containing bounding box information for objects in the image.
+                                Each row in the array should contain (xmin, ymin, xmax, ymax, _, id_class, _).
+        path_save_img (str): The path to save the image file.
+        path_save_label (str): The path to save the annotation file in XML format.
+        mapping_labels (dict): A dictionary mapping class IDs to class names.
+
+    Returns:
+        None
+    """
+    name = format(random.getrandbits(128), 'x')
+    img_path = os.path.join(path_save_img, name + '.jpg')
+    xml_path = os.path.join(path_save_label, name + '.xml')
     h, w = img.shape[:2]
-    bboxes = res.pandas().xyxy[0].values.tolist()
+    mapping_labels = list(mapping_labels.keys())
     if len(bboxes) != 0:
         voc_labels = []
-        for xmin, ymin, xmax, ymax, _, id_class, _ in bboxes:
+        
+        for xmin, ymin, xmax, ymax, id_class in bboxes:
             voc = []
-            voc.append(self.class_mapping.get(int(id_class)))
+            voc.append(mapping_labels[int(id_class)])  # Get the class name from the class ID
             voc.append(int(round(xmin)))
             voc.append(int(round(ymin)))
             voc.append(int(round(xmax)))
             voc.append(int(round(ymax)))
             voc_labels.append(voc)
 
-        # Create xml tree
-        root = self.create_xml_tree(path_img, w, h, voc_labels)
+        # Create XML tree for object annotations
+        root = create_xml_tree(path_save_img, w, h, voc_labels)
         tree = ET.ElementTree(root)
-        out_path = "{}/{}.xml".format(self.labeling_dir,
-                                        os.path.basename(path_img).split('.')[0])
-        tree.write(out_path)
-        cv2.imwrite(path_img, img)
+        tree.write(xml_path)
+        
+        # Save the image to the specified path
+        cv2.imwrite(img_path, img)
 
