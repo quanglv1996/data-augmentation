@@ -50,14 +50,14 @@ config_augmentation = {
         'saturation_factor': 1.5,
     },
     'Cutout':{
-        'used': True,
+        'used': False,
         'amount': .3,
     },
     'Filters':{
         'used': True
     },
     'GridMask':{
-        'used': True,
+        'used': False,
         'use_h': True,
         'use_w': True,
         'rotate': 1,
@@ -70,7 +70,7 @@ config_augmentation = {
         'used': True,
         'p': 1},
     'HorizontalFlip':{
-        'used': True
+        'used': False
     },
     'RandomHSV': {
         'used': True,
@@ -82,7 +82,7 @@ config_augmentation = {
         'used': True,
     },
     'Mixup':{
-        'used': True,
+        'used': False,
         'lambd': .3,
     },
     'Noisy':{
@@ -94,7 +94,7 @@ config_augmentation = {
         'inp_dim': 512,
     },
     'RotateOnlyBboxes':{
-        'used': True,
+        'used': False,
         'angle': 5.,
     },
     'RandomRotate':{
@@ -102,7 +102,7 @@ config_augmentation = {
         'angle': 5.,
     },
     'Rotate':{
-        'used': True,
+        'used': False,
         'angle': 5,
     },
     'RandomScale': {
@@ -111,7 +111,7 @@ config_augmentation = {
         'diff': True
     },
     'Scale': {
-        'used': True,
+        'used': False,
         'scale_x': 0.5,
         'scale_y': True
     },
@@ -123,11 +123,11 @@ config_augmentation = {
         'shear_factor': 0.5
     },
     'Shear': {
-        'used': True,
+        'used': False,
         'shear_factor': 0.5
     },
     'SmallObjectAugmentation': {
-        'used': True,
+        'used': False,
     },
     'RandomTranslate': {
         'used': True,
@@ -135,7 +135,7 @@ config_augmentation = {
         'diff': True
     },
     'Translate': {
-        'used': True,
+        'used': False,
         'translate': 0.2,
         'diff': True
     },
@@ -146,8 +146,8 @@ config_augmentation = Map(config_augmentation)
 Config for generation data
 '''
 config_data = {
-    'path_data_raw': 'D:/data-augmentation-for-object-detection/data',
-    'path_save': './dataset',
+    'path_data_raw': 'D:/data-augmentation-for-object-detection/dataset_pascalvoc',
+    'path_save': 'D:/data-augmentation-for-object-detection/dataset',
     'label_mapping': {
         'disc': 0,
         'adapter':1,
@@ -157,7 +157,10 @@ config_data = {
         'boom': 5,
         'head': 6,
     },
-    'train_scale': 0.8,
-    'val_scale': 0.19
+    'train_scale': 0.7,
+    'val_scale': 0.2,
+    'src_type_dataset': 'voc',
+    'dest_type_dataset': 'yolo',
+    
 }
 config_data = Map(config_data)

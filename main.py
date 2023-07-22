@@ -34,7 +34,6 @@ from augmentations.shear_random import RandomShear
 from augmentations.shear import Shear
 from augmentations.small_object_augmentation import SmallObjectAugmentation
 from augmentations.translate_random import RandomTranslate
-from augmentations.translate import Translate
 from utils.utils import create_folder
 from utils.utils import save_sample
 from utils.utils import get_info_bbox_yolo, get_info_bbox_pascalvoc
@@ -301,7 +300,6 @@ class DataAugmentationForYoloV5(object):
             self.create_yaml()
         print('Create dataset complete...')
 
-        
 def main():
     task = config_data
     parser = ArgumentParser(description='Run data creation...')
@@ -321,11 +319,11 @@ def main():
     args = parser.parse_args()
     path_data = args.path_raw
     path_save = args.path_save
-    label_mapping = task.label_mapping
     scale = [args.train_scale, args.val_scale, 1 - args.train_scale - args.val_scale]
     src_type_dataset = args.src_type_dataset
     dest_type_dataset = args.dest_type_dataset
     
+    label_mapping = task.label_mapping
     dataset = DataAugmentationForYoloV5(path_data, path_save, label_mapping, scale, src_type_dataset, dest_type_dataset)
     dataset.create()
 
