@@ -575,4 +575,44 @@ def save_pascalvoc_format(img, bboxes, path_save_img, path_save_label, mapping_l
         
         # Save the image to the specified path
         cv2.imwrite(img_path, img)
+        
+def save_sample(dest_type_dataset, img, bboxes, path_save_img, path_save_label, mapping_labels):
+    if dest_type_dataset == 'yolo':
+        name = format(random.getrandbits(128), 'x')
+        img_path = os.path.join(path_save_img, name + '.jpg')
+        txt_path = os.path.join(path_save_label, name + '.txt')
+        
+        with open(txt_path, "w") as f:
+            # Convert and write each bounding box in YOLO format to the file
+            for box in list(bboxes):
+                # Convert the bounding box coordinates to YOLO format
+                class_index, xcen, ycen, w, h = bndbox2yololine(box, img)
+                
+                # Write the bounding box in YOLO format to the file
+                f.write("%d %.6f %.6f %.6f %.6f\n" % (class_index, xcen, ycen, w, h))
+        cv2.imwrite(img_path, img)
+    elif dest_type_dataset == 'voc':
+        name = format(random.getrandbits(128), 'x')
+        img_path = os.path.join(path_save_img, name + '.jpg')
+        xml_path = os.path.join(path_save_label, name + '.xml')
+        h, w = img.shape[:2]
+        mapping_labels = list(mapping_labels.keys())
+        if len(bboxes) != 0:
+            voc_labels = []
+            
+            for xmin, ymin, xmax, ymax, id_class in bboxes:
+                voc = []
+                voc.append(mapping_labels[int(id_class)])  # Get the class name from the class ID
+                voc.append(int(round(xmin)))
+                voc.append(int(round(ymin)))
+                voc.append(int(round(xmax)))
+                voc.append(int(round(ymax)))
+                voc_labels.append(voc)
 
+            # Create XML tree for object annotations
+            root = create_xml_tree(path_save_img, w, h, voc_labels)
+            tree = ET.ElementTree(root)
+            tree.write(xml_path)
+            
+            # Save the image to the specified path
+            cv2.imwrite(img_path, img)
