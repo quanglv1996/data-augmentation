@@ -385,7 +385,7 @@ class DataAugmentation(object):
             self.create_yaml()
 
         # Print a message indicating that dataset creation is complete
-        print('Create dataset complete...')
+        print('Create augmentation dataset complete...')
 
 def main():
     # Load configuration data

@@ -150,21 +150,17 @@ Config for generation data
 '''
 # Configuration settings for generating data
 config_data = {
-    'path_data_raw': 'D:/data-augmentation-for-object-detection/dataset_pascalvoc',
-    'path_save': 'D:/data-augmentation-for-object-detection/dataset',
+    'path_data_raw': './assets/yolo',
+    'path_save': './dataset',
     'label_mapping': {
-        'disc': 0,
-        'adapter': 1,
-        'guide': 2,
-        'qr': 3,
-        'gun': 4,
-        'boom': 5,
-        'head': 6,
+        'dog': 0,
+        'car': 1,
+        'bike': 2,
     },
     'train_scale': 0.7,
     'val_scale': 0.2,
-    'src_type_dataset': 'voc',
-    'dest_type_dataset': 'yolo',
+    'src_type_dataset': 'yolo',
+    'dest_type_dataset': 'voc',
 }
 
 # Convert the data generation configuration to a Map object
