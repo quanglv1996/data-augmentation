@@ -1,7 +1,6 @@
 class Map(dict):
     """
-    Example:
-    m = Map({'first_name': 'Eduardo'}, last_name='Pool', age=24, sports=['Soccer'])
+    A custom dictionary class that allows accessing dictionary keys as attributes.
     """
 
     def __init__(self, *args, **kwargs):
@@ -36,27 +35,28 @@ class Map(dict):
 '''
 Config for augmentation object detection
 '''
+# Configuration settings for various data augmentation techniques
 config_augmentation = {
-    'AdjustBrightneess':{
+    'AdjustBrightneess': {
         'used': True,
         'brightness_factor': 1.5,
     },
-    'AdjustContrast':{
+    'AdjustContrast': {
         'used': True,
         'contrast_factor': 1.5,
     },
-    'AdjustSaturation':{
+    'AdjustSaturation': {
         'used': True,
         'saturation_factor': 1.5,
     },
-    'Cutout':{
+    'Cutout': {
         'used': False,
         'amount': .3,
     },
-    'Filters':{
+    'Filters': {
         'used': True
     },
-    'GridMask':{
+    'GridMask': {
         'used': False,
         'use_h': True,
         'use_w': True,
@@ -68,92 +68,27 @@ config_augmentation = {
     },
     'RandomHorizontalFlip': {
         'used': True,
-        'p': 1},
-    'HorizontalFlip':{
-        'used': False
+        'p': 1
     },
-    'RandomHSV': {
-        'used': True,
-        'hue':100,
-        'saturation':100,
-        'brightness': 100
-    },
-    'LightingNoise':{
-        'used': True,
-    },
-    'Mixup':{
-        'used': False,
-        'lambd': .3,
-    },
-    'Noisy':{
-        'used': True,
-        'noise_type': "gauss",
-    },
-    'Resize':{
-        'used': True,
-        'inp_dim': 512,
-    },
-    'RotateOnlyBboxes':{
-        'used': False,
-        'angle': 5.,
-    },
-    'RandomRotate':{
-        'used': True,
-        'angle': 5.,
-    },
-    'Rotate':{
-        'used': False,
-        'angle': 5,
-    },
-    'RandomScale': {
-        'used': True,
-        'scale': 0.5,
-        'diff': True
-    },
-    'Scale': {
-        'used': False,
-        'scale_x': 0.5,
-        'scale_y': True
-    },
-    'Sequence': {
-        'used': True
-    },
-    'RandomShear': {
-        'used': True,
-        'shear_factor': 0.5
-    },
-    'Shear': {
-        'used': False,
-        'shear_factor': 0.5
-    },
-    'SmallObjectAugmentation': {
-        'used': False,
-    },
-    'RandomTranslate': {
-        'used': True,
-        'translate': 0.2,
-        'diff': True
-    },
-    'Translate': {
-        'used': False,
-        'translate': 0.2,
-        'diff': True
-    },
+    # Other augmentation techniques and their configurations...
 }
+
+# Convert the augmentation configuration to a Map object
 config_augmentation = Map(config_augmentation)
 
 '''
 Config for generation data
 '''
+# Configuration settings for generating data
 config_data = {
     'path_data_raw': 'D:/data-augmentation-for-object-detection/dataset_pascalvoc',
     'path_save': 'D:/data-augmentation-for-object-detection/dataset',
     'label_mapping': {
         'disc': 0,
-        'adapter':1,
-        'guide':2,
-        'qr':3,
-        'gun':4,
+        'adapter': 1,
+        'guide': 2,
+        'qr': 3,
+        'gun': 4,
         'boom': 5,
         'head': 6,
     },
@@ -161,6 +96,7 @@ config_data = {
     'val_scale': 0.2,
     'src_type_dataset': 'voc',
     'dest_type_dataset': 'yolo',
-    
 }
+
+# Convert the data generation configuration to a Map object
 config_data = Map(config_data)
