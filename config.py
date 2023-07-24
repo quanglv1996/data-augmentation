@@ -50,14 +50,14 @@ config_augmentation = {
         'saturation_factor': 1.5,
     },
     'Cutout': {
-        'used': False,
+        'used': True,
         'amount': .3,
     },
     'Filters': {
         'used': True
     },
     'GridMask': {
-        'used': False,
+        'used': True,
         'use_h': True,
         'use_w': True,
         'rotate': 1,
@@ -70,7 +70,76 @@ config_augmentation = {
         'used': True,
         'p': 1
     },
-    # Other augmentation techniques and their configurations...
+    'HorizontalFlip':{
+        'used': True
+    },
+    'RandomHSV': {
+        'used': True,
+        'hue':100,
+        'saturation':100,
+        'brightness': 100
+    },
+    'LightingNoise':{
+        'used': True,
+    },
+    'Mixup':{
+        'used': True,
+        'lambd': .3,
+    },
+    'Noisy':{
+        'used': True,
+        'noise_type': "gauss",
+    },
+    'Resize':{
+        'used': True,
+        'inp_dim': 512,
+    },
+    'RotateOnlyBboxes':{
+        'used': True,
+        'angle': 5.,
+    },
+    'RandomRotate':{
+        'used': True,
+        'angle': 5.,
+    },
+    'Rotate':{
+        'used': True,
+        'angle': 5,
+    },
+    'RandomScale': {
+        'used': True,
+        'scale': 0.5,
+        'diff': True
+    },
+    'Scale': {
+        'used': True,
+        'scale_x': 0.5,
+        'scale_y': True
+    },
+    'Sequence': {
+        'used': True
+    },
+    'RandomShear': {
+        'used': True,
+        'shear_factor': 0.5
+    },
+    'Shear': {
+        'used': True,
+        'shear_factor': 0.5
+    },
+    'SmallObjectAugmentation': {
+        'used': True,
+    },
+    'RandomTranslate': {
+        'used': True,
+        'translate': 0.2,
+        'diff': True
+    },
+    'Translate': {
+        'used': True,
+        'translate': 0.2,
+        'diff': True
+    },
 }
 
 # Convert the augmentation configuration to a Map object
