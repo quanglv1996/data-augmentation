@@ -60,23 +60,19 @@ class Augmentation:
         config = configparser.ConfigParser()
         config.read(self.config_path)
 
-        # Chuyển đổi toàn bộ dữ liệu trong config
         config_dict = {
             section: {key: self._convert_type(value) for key, value in config.items(section)}
             for section in config.sections()
         }
 
-        # Xử lý riêng các trường đặc biệt trong [MAIN]
         if 'MAIN' in config_dict:
-            # Chuyển label_mapping thành dict[str, int]
             if 'label_mapping' in config_dict['MAIN']:
-                label_str = config_dict['MAIN']['label_mapping'].strip("[]")  # Xóa dấu []
+                label_str = config_dict['MAIN']['label_mapping'].strip("[]") 
                 label_pairs = [item.split(":") for item in label_str.split(",")]
                 config_dict['MAIN']['label_mapping'] = {k.strip().strip("'").strip('"'): int(v.strip()) for k, v in label_pairs}
 
-            # Chuyển scale thành list[float]
             if 'scale' in config_dict['MAIN']:
-                scale_str = config_dict['MAIN']['scale'].strip("[]")  # Xóa dấu []
+                scale_str = config_dict['MAIN']['scale'].strip("[]")  
                 config_dict['MAIN']['scale'] = [float(item.strip()) for item in scale_str.split(",")]
 
         return config_dict
@@ -85,21 +81,17 @@ class Augmentation:
     def _convert_type(value):
         value_lower = value.lower()
         
-        # Chuyển đổi boolean
         if value_lower in {"true", "false"}:
             return value_lower == "true"
         
-        # Chuyển đổi số thực và số nguyên
         try:
-            if "." in value or "e" in value.lower():  # Kiểm tra số thực
+            if "." in value or "e" in value.lower():  
                 return float(value)
-            return int(value)  # Nếu không phải số thực thì chuyển thành số nguyên
+            return int(value) 
         except ValueError:
-            pass  # Nếu không chuyển được, giữ nguyên chuỗi
+            pass
         
-        return value  # Trả về nguyên bản nếu không thể chuyển đổi
-
-
+        return value
 
 
     def create_yaml(self):
@@ -200,41 +192,32 @@ class Augmentation:
 
 
     def split_dataset(self):
-        # Xác định định dạng file label
         self.type_format_label = {'yolo': 'txt', 'voc': 'xml', 'labelme': 'json'}.get(self.src_type_dataset, 'txt')
         
-        # Lấy danh sách file trong thư mục dataset
         filenames = os.listdir(self.path_dataset)
         
-        # Xác định phần mở rộng ảnh
         self.type_img = filenames[0].split('.')[-1]
         
-        # Lọc danh sách ảnh và label
         label_filenames = [f for f in filenames if f.endswith(self.type_format_label)]
         img_filenames = [f for f in filenames if f.endswith(self.type_img)]
         
-        # Tạo tập hợp chứa các ảnh có nhãn
         label_stems = {f.rsplit('.', 1)[0] for f in label_filenames}
         img_with_label = [f for f in img_filenames if f.rsplit('.', 1)[0] in label_stems]
         img_without_label = [f for f in img_filenames if f.rsplit('.', 1)[0] not in label_stems]
         
-        # Shuffle dữ liệu
         random.shuffle(img_with_label)
         random.shuffle(img_without_label)
         
-        # Tính toán số lượng ảnh cho từng tập
         train_cut_wol = int(len(img_without_label) * self.scale_dataset[0])
         val_cut_wol = int(len(img_without_label) * sum(self.scale_dataset[:2]))
         
         train_cut_wl = int(len(img_with_label) * self.scale_dataset[0])
         val_cut_wl = int(len(img_with_label) * sum(self.scale_dataset[:2]))
         
-        # Chia tập dữ liệu
         train_img = img_without_label[:train_cut_wol] + img_with_label[:train_cut_wl]
         val_img = img_without_label[train_cut_wol:val_cut_wol] + img_with_label[train_cut_wl:val_cut_wl]
         test_img = img_without_label[val_cut_wol:] + img_with_label[val_cut_wl:]
-        
-        # Shuffle từng tập
+    
         random.shuffle(train_img)
         random.shuffle(val_img)
         random.shuffle(test_img)
@@ -302,23 +285,12 @@ class Augmentation:
     
 
     def create(self):
-        # Split the dataset into training, validation, and test sets
         train, val, test = self.split_dataset()
-
-        # Augment the data for the training set
         self.augment_data(train, 'train')
-
-        # Augment the data for the validation set
         self.augment_data(val, 'val')
-
-        # Augment the data for the test set
         self.augment_data(test, 'test')
-
-        # If the destination dataset type is 'yolo', create a YAML file for YOLO format
         if self.dest_type_dataset == 'yolo':
             self.create_yaml()
-
-        # Print a message indicating that dataset creation is complete
         print('Create augmentation dataset complete...')
 
 if __name__ == "__main__":
