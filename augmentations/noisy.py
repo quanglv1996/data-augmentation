@@ -3,26 +3,9 @@ import cv2
 
 class Noisy(object):
     def __init__(self, noise_type="gauss"):
-        """
-        Initialize the Noisy data augmentation object.
-
-        Args:
-            noise_type (str): The type of noise to apply. "gauss" for Gaussian noise and "sp" for salt-and-pepper noise.
-        """
         self.noise_type = noise_type
         
-    def __call__(self, img, bboxes):
-        """
-        Apply the specified type of noise to the input image.
-
-        Args:
-            img (numpy.ndarray): The input image.
-            bboxes (numpy.ndarray): Bounding boxes associated with the image.
-
-        Returns:
-            numpy.ndarray: The image with the applied noise.
-            numpy.ndarray: The unchanged bounding boxes, as the noise does not affect the bounding boxes.
-        """
+    def transform(self, img, bboxes):
         # Apply Gaussian noise to the image
         if self.noise_type == "gauss":
             image = img.copy() 

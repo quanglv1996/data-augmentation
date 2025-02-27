@@ -3,18 +3,6 @@ from PIL import Image
 
 class GridMask(object):
     def __init__(self, use_h=True, use_w=True, rotate=1, offset=False, ratio=0.5, mode=0, prob=0.7):
-        """
-        Initialize the GridMask augmentation class with various parameters.
-
-        Args:
-            use_h (bool): If True, use grid masking along the height (vertical) dimension.
-            use_w (bool): If True, use grid masking along the width (horizontal) dimension.
-            rotate (int): The maximum rotation angle (in degrees) to apply to the mask.
-            offset (bool): If True, apply an offset to the image after masking.
-            ratio (float): The ratio of the mask size to the grid size.
-            mode (int): The mode of the mask. If 0, the mask will be black; if 1, the mask will be white.
-            prob (float): The probability of applying GridMask augmentation to an image.
-        """
         self.use_h = use_h
         self.use_w = use_w
         self.rotate = rotate
@@ -25,26 +13,9 @@ class GridMask(object):
         self.prob = prob
 
     def set_prob(self, prob=0.5):
-        """
-        Set the probability of applying GridMask augmentation.
-
-        Args:
-            prob (float): The probability of applying GridMask augmentation to an image.
-        """
         self.prob = prob
 
-    def __call__(self, img, bboxes):
-        """
-        Apply GridMask augmentation to the input image.
-
-        Args:
-            img (numpy.ndarray): The input image.
-            bboxes (numpy.ndarray): An array of bounding boxes associated with the image.
-
-        Returns:
-            numpy.ndarray: The augmented image with GridMask applied.
-            numpy.ndarray: The unchanged array of bounding boxes.
-        """
+    def transform(self, img, bboxes):
         # Check if GridMask augmentation should be applied based on the probability
         if np.random.rand() > self.prob:
             return img, bboxes

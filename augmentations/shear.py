@@ -1,52 +1,38 @@
 import numpy as np
-from augmentations.horizontal_flip import HorizontalFlip
 import cv2
+import random
+from augmentations.horizontal_flip import HorizontalFlip
 
 class Shear(object):
-    def __init__(self, shear_factor=0.2):
-        """
-        Initialize the Shear data augmentation object.
+    def __init__(self, shear_min=-0.2, shear_max=0.2):
+        self.shear_min = shear_min
+        self.shear_max = shear_max
+        self.hori_flip = HorizontalFlip()
 
-        Args:
-            shear_factor (float): The shear factor to apply to the image. Positive values shear the image towards the
-                                  right, and negative values shear the image towards the left.
-        """
-        # Initialize the object with the shear factor
-        self.shear_factor = shear_factor
+    def transform(self, img, bboxes):
+        # Chọn hệ số shear ngẫu nhiên trong khoảng shear_min - shear_max
+        shear_factor = random.uniform(self.shear_min, self.shear_max)
 
-    def __call__(self, img, bboxes):
-        """
-        Apply shear transformation to the input image and bounding boxes.
-
-        Args:
-            img (numpy.ndarray): The input image.
-            bboxes (numpy.ndarray): Bounding boxes associated with the image.
-
-        Returns:
-            numpy.ndarray: The sheared image.
-            numpy.ndarray: The adjusted bounding boxes.
-        """
-        # Retrieve the shear factor
-        shear_factor = self.shear_factor
-
-        # Apply horizontal flip if the shear factor is negative
+        # Áp dụng flip nếu shear_factor âm để đảm bảo shear luôn dương
+        flip_applied = False
         if shear_factor < 0:
-            img, bboxes = HorizontalFlip()(img, bboxes)
+            img, bboxes = self.hori_flip.transform(img, bboxes)
+            flip_applied = True
 
-        # Create an affine transformation matrix for shear
+        # Tạo ma trận biến đổi affine để shear
         M = np.array([[1, abs(shear_factor), 0], [0, 1, 0]])
 
-        # Calculate the new width after shearing
-        nW = img.shape[1] + abs(shear_factor * img.shape[0])
+        # Tính toán chiều rộng mới sau khi shear
+        new_width = img.shape[1] + abs(shear_factor * img.shape[0])
 
-        # Adjust bounding boxes based on shear factor
+        # Điều chỉnh tọa độ bounding box theo shear
         bboxes[:, [0, 2]] += ((bboxes[:, [1, 3]]) * abs(shear_factor)).astype(int)
 
-        # Apply the shear transformation to the image
-        img = cv2.warpAffine(img, M, (int(nW), img.shape[0]))
+        # Biến đổi ảnh bằng warpAffine
+        img = cv2.warpAffine(img, M, (int(new_width), img.shape[0]))
 
-        # Undo horizontal flip if the shear factor was negative
-        if shear_factor < 0:
-            img, bboxes = HorizontalFlip()(img, bboxes)
+        # Nếu đã flip trước đó, ta cần flip lại để đưa về trạng thái ban đầu
+        if flip_applied:
+            img, bboxes = self.hori_flip.transform(img, bboxes)
 
         return img, bboxes

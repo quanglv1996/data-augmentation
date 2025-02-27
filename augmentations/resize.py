@@ -2,27 +2,11 @@ import numpy as np
 from utils.utils import letterbox_image
 
 class Resize(object):
-    def __init__(self, inp_dim):
-        """
-        Initialize the Resize data augmentation object.
-
-        Args:
-            inp_dim (int): The desired input dimension (height and width) for resizing the image while maintaining aspect ratio.
-        """
-        self.inp_dim = inp_dim
+    def __init__(self, inp_dim=512):
+        self.inp_dim = int(inp_dim)
         
-    def __call__(self, img, bboxes):
-        """
-        Resize the input image and adjust the bounding box coordinates accordingly.
-
-        Args:
-            img (numpy.ndarray): The input image.
-            bboxes (numpy.ndarray): Bounding boxes associated with the image.
-
-        Returns:
-            numpy.ndarray: The resized image.
-            numpy.ndarray: The adjusted bounding boxes.
-        """
+    def transform(self, img, bboxes):
+        print(img.shape, bboxes)
         # Get the original width and height of the image
         w, h = img.shape[1], img.shape[0]
         

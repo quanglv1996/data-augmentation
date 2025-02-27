@@ -328,6 +328,7 @@ def get_info_bbox_pascalvoc(xml_path, label_mapping):
     for obj in root.iter('object'):
         # Get the class name of the object from the XML file
         class_name = obj.find('name').text
+        print(class_name)
         try:
             # Find the class ID from the label_mapping dictionary
             id_class = label_mapping[class_name]

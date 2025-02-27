@@ -6,23 +6,9 @@ import random
 
 class LightingNoise(object):
     def __init__(self):
-        """
-        Initialize the Lighting_Noise data augmentation object.
-        """
         pass
         
-    def __call__(self, img, bboxes):
-        """
-        Apply random color channel swapping to the input image.
-
-        Args:
-            img (numpy.ndarray or PIL.Image): The input image.
-            bboxes (numpy.ndarray): An array of bounding boxes associated with the image.
-
-        Returns:
-            numpy.ndarray: The augmented image with random color channel swapping.
-            numpy.ndarray: The original bounding boxes (no adjustment is made on the bounding boxes).
-        """
+    def transform(self, img, bboxes):
         # Create a copy of the image
         img = img.copy()
 

@@ -3,14 +3,6 @@ import numpy as np
 
 class RandomHSV(object):
     def __init__(self, hue=None, saturation=None, brightness=None):
-        """
-        Initialize the RandomHSV data augmentation object.
-
-        Args:
-            hue (tuple or None): Range of hue adjustment. If None, hue will not be adjusted.
-            saturation (tuple or None): Range of saturation adjustment. If None, saturation will not be adjusted.
-            brightness (tuple or None): Range of brightness adjustment. If None, brightness will not be adjusted.
-        """
         # Initialize the object with optional hue, saturation, and brightness ranges
         self.hue = hue if hue is not None else 0
         self.saturation = saturation if saturation is not None else 0
@@ -24,18 +16,7 @@ class RandomHSV(object):
         if type(self.brightness) != tuple:
             self.brightness = (-self.brightness, self.brightness)
 
-    def __call__(self, img, bboxes):
-        """
-        Apply random hue, saturation, and brightness adjustments to the input image.
-
-        Args:
-            img (numpy.ndarray): The input image.
-            bboxes (numpy.ndarray): An array of bounding boxes associated with the image.
-
-        Returns:
-            numpy.ndarray: The augmented image with random hue, saturation, and brightness adjustments.
-            numpy.ndarray: The original bounding boxes (no adjustment is made on the bounding boxes).
-        """
+    def transform(self, img, bboxes):
         # Randomly sample hue, saturation, and brightness from their ranges
         hue = random.randint(*self.hue)
         saturation = random.randint(*self.saturation)

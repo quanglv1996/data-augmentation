@@ -3,26 +3,9 @@ import numpy as np
 
 class RotateOnlyBboxes(object):
     def __init__(self, angle=5):
-        """
-        Initialize the Rotate_Only_Bboxes data augmentation object.
-
-        Args:
-            angle (float): The specified rotation angle in degrees.
-        """
         self.angle = angle
 
-    def __call__(self, img, bboxes):
-        """
-        Rotate the image and adjust the bounding box coordinates accordingly.
-
-        Args:
-            img (numpy.ndarray): The input image.
-            bboxes (numpy.ndarray): Bounding boxes associated with the image.
-
-        Returns:
-            numpy.ndarray: The rotated image.
-            numpy.ndarray: The adjusted bounding boxes.
-        """
+    def transform(self, img, bboxes):
         # Create a new image and boxes to avoid modifying the original data
         new_image = img.copy()
         boxes = bboxes.copy()
