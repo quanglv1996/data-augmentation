@@ -6,7 +6,6 @@ class Resize(object):
         self.inp_dim = int(inp_dim)
         
     def transform(self, img, bboxes):
-        print(img.shape, bboxes)
         # Get the original width and height of the image
         w, h = img.shape[1], img.shape[0]
         

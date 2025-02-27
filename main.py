@@ -2,6 +2,7 @@ import os
 import random
 import yaml
 import cv2
+import ast
 import configparser
 from tqdm import tqdm
 from shutil import copyfile
@@ -32,10 +33,8 @@ from utils.utils import create_folder, save_sample, get_info_bbox_yolo, get_info
 
 
 class Augmentation:
-    def __init__(self, config_path, label_mapping, scale=(0.6, 0.2, 0.2)):
+    def __init__(self, config_path):
         self.config_path = config_path
-        self.label_mapping = label_mapping
-        self.scale_dataset = scale
         
         self.config_dict = self._load_config()
         self._create_augmentation_object()
@@ -45,6 +44,8 @@ class Augmentation:
         self.path_save = self.config_dict['MAIN']['path_save']
         self.src_type_dataset = self.config_dict['MAIN']['src_type_dataset']
         self.dest_type_dataset = self.config_dict['MAIN']['dest_type_dataset']
+        self.label_mapping = self.config_dict['MAIN']['label_mapping']
+        self.scale_dataset = self.config_dict['MAIN']['scale']
 
         self.train_path = os.path.join(self.path_save, 'train')
         self.val_path = os.path.join(self.path_save, 'val')
@@ -58,18 +59,47 @@ class Augmentation:
     def _load_config(self):
         config = configparser.ConfigParser()
         config.read(self.config_path)
-        return {section: {key: self._convert_type(value) for key, value in config.items(section)} for section in config.sections()}
 
+        # Chuyển đổi toàn bộ dữ liệu trong config
+        config_dict = {
+            section: {key: self._convert_type(value) for key, value in config.items(section)}
+            for section in config.sections()
+        }
+
+        # Xử lý riêng các trường đặc biệt trong [MAIN]
+        if 'MAIN' in config_dict:
+            # Chuyển label_mapping thành dict[str, int]
+            if 'label_mapping' in config_dict['MAIN']:
+                label_str = config_dict['MAIN']['label_mapping'].strip("[]")  # Xóa dấu []
+                label_pairs = [item.split(":") for item in label_str.split(",")]
+                config_dict['MAIN']['label_mapping'] = {k.strip().strip("'").strip('"'): int(v.strip()) for k, v in label_pairs}
+
+            # Chuyển scale thành list[float]
+            if 'scale' in config_dict['MAIN']:
+                scale_str = config_dict['MAIN']['scale'].strip("[]")  # Xóa dấu []
+                config_dict['MAIN']['scale'] = [float(item.strip()) for item in scale_str.split(",")]
+
+        return config_dict
 
     @staticmethod
     def _convert_type(value):
-        if value.lower() in {"true", "false"}:
-            return value.lower() == "true"
-        if value.replace('.', '', 1).isdigit() or (value.startswith('-') and value[1:].replace('.', '', 1).isdigit()):
-            return float(value)
-        if value.isdigit():
-            return int(value)
-        return value
+        value_lower = value.lower()
+        
+        # Chuyển đổi boolean
+        if value_lower in {"true", "false"}:
+            return value_lower == "true"
+        
+        # Chuyển đổi số thực và số nguyên
+        try:
+            if "." in value or "e" in value.lower():  # Kiểm tra số thực
+                return float(value)
+            return int(value)  # Nếu không phải số thực thì chuyển thành số nguyên
+        except ValueError:
+            pass  # Nếu không chuyển được, giữ nguyên chuỗi
+        
+        return value  # Trả về nguyên bản nếu không thể chuyển đổi
+
+
 
 
     def create_yaml(self):
@@ -87,6 +117,8 @@ class Augmentation:
         
         with open(path_save_yaml, "w") as f:
             yaml.safe_dump(data, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+            
+        copyfile(self.config_path, os.path.join(self.path_save, 'config.cfg'))
 
 
     def _create_augmentation_object(self):
@@ -230,7 +262,6 @@ class Augmentation:
             src_img = os.path.join(self.path_dataset, filename)
             img = cv2.imread(src_img)
             src_label = src_img.replace(self.type_img, self.type_format_label)
-            print(src_label)
             if self.src_type_dataset == 'yolo':
                 bboxes = get_info_bbox_yolo(img, src_label)
             elif self.src_type_dataset == 'voc':
@@ -264,7 +295,6 @@ class Augmentation:
 
                 for used, aug_object in augmentations:
                     if used:
-                        print(img.shape, bboxes)
                         img_aug, bboxes_aug = aug_object.transform(img.copy(), bboxes.copy())
                         save_sample(self.dest_type_dataset, img_aug, bboxes_aug, img_save, label_save, self.label_mapping)
             else:
@@ -292,10 +322,5 @@ class Augmentation:
         print('Create augmentation dataset complete...')
 
 if __name__ == "__main__":
-    config_path = 'D:\Projects-Persional\data-augmentation-for-object-detection\config.cfg'
-    label_mapping = {
-        'dog':0,
-        'bike':1,
-        'car': 2,
-    }
-    Augmentation(config_path=config_path, label_mapping=label_mapping).create()
+    config_path = './config.cfg'
+    Augmentation(config_path=config_path).create()
