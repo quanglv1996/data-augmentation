@@ -1,37 +1,28 @@
 import numpy as np
 import cv2
 
-class Noisy(object):
-    def __init__(self, noise_type="gauss"):
+class Noisy:
+    def __init__(self, noise_type="gauss", mean=0, std=10, prob=0.05):
         self.noise_type = noise_type
-        
+        self.mean = mean
+        self.std = std
+        self.prob = prob
+
     def transform(self, img, bboxes):
-        # Apply Gaussian noise to the image
+        image = img.copy()
         if self.noise_type == "gauss":
-            image = img.copy() 
-            mean = 0
-            st = 0.7
-            gauss = np.random.normal(mean, st, image.shape)
-            gauss = gauss.astype('uint8')
-            image = cv2.add(image, gauss)
-            return image, bboxes
-    
-        # Apply salt-and-pepper noise to the image
+            gauss = np.random.normal(self.mean, self.std, image.shape).astype(np.float32)
+            noisy = image.astype(np.float32) + gauss
+            noisy = np.clip(noisy, 0, 255).astype(np.uint8)
+            return noisy, bboxes
+
         elif self.noise_type == "sp":
-            image = img.copy() 
-            prob = 0.05
-            if len(image.shape) == 2:
-                black = 0
-                white = 255            
+            probs = np.random.rand(*image.shape[:2])
+            if image.ndim == 2:
+                black, white = 0, 255
             else:
-                colorspace = image.shape[2]
-                if colorspace == 3:  # RGB
-                    black = np.array([0, 0, 0], dtype='uint8')
-                    white = np.array([255, 255, 255], dtype='uint8')
-                else:  # RGBA
-                    black = np.array([0, 0, 0, 255], dtype='uint8')
-                    white = np.array([255, 255, 255, 255], dtype='uint8')
-            probs = np.random.random(image.shape[:2])
-            image[probs < (prob / 2)] = black
-            image[probs > 1 - (prob / 2)] = white
+                black = np.zeros(image.shape[2], dtype='uint8')
+                white = np.full(image.shape[2], 255, dtype='uint8')
+            image[probs < (self.prob / 2)] = black
+            image[probs > 1 - (self.prob / 2)] = white
             return image, bboxes

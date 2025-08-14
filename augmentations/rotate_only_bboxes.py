@@ -1,35 +1,29 @@
 import torchvision.transforms.functional as F
 import numpy as np
 
-class RotateOnlyBboxes(object):
+class RotateOnlyBboxes:
     def __init__(self, angle=5):
         self.angle = angle
 
     def transform(self, img, bboxes):
-        # Create a new image and boxes to avoid modifying the original data
-        new_image = img.copy()
-        boxes = bboxes.copy()
+        img_tensor = F.to_tensor(img)
+        boxes = np.asarray(bboxes).copy()
 
-        # Convert the new image to a tensor
-        new_image = F.to_tensor(new_image)
+        for box in boxes:
+            x_min, y_min, x_max, y_max = map(int, box[:4])
+            # Giới hạn bbox trong biên ảnh
+            x_min = max(0, x_min)
+            y_min = max(0, y_min)
+            x_max = min(img_tensor.shape[2] - 1, x_max)
+            y_max = min(img_tensor.shape[1] - 1, y_max)
+            if x_max <= x_min or y_max <= y_min:
+                continue
 
-        # Iterate through each bounding box and rotate the corresponding region in the image
-        for i in range(boxes.shape[0]):
-            x_min, y_min, x_max, y_max, id = map(int, boxes[i])
+            bbox = img_tensor[:, y_min:y_max+1, x_min:x_max+1]
+            bbox_img = F.to_pil_image(bbox)
+            bbox_img = bbox_img.rotate(self.angle)
+            img_tensor[:, y_min:y_max+1, x_min:x_max+1] = F.to_tensor(bbox_img)
 
-            # Extract the region corresponding to the bounding box
-            bbox = new_image[:, y_min:y_max+1, x_min:x_max+1]
-            bbox = F.to_pil_image(bbox)
-
-            # Rotate the region by the specified angle
-            bbox = bbox.rotate(self.angle)
-
-            # Replace the region in the new image with the rotated region
-            new_image[:, y_min:y_max+1, x_min:x_max+1] = F.to_tensor(bbox)
-
-        # Convert the new image back to a PIL image and then to a numpy array
-        img = F.to_pil_image(new_image)
-        img = np.array(img)[:, :, ::-1].copy()
-
-        # Return the rotated image and the original bounding boxes
-        return img, boxes
+        img_out = F.to_pil_image(img_tensor)
+        img_out = np.array(img_out)[:, :, ::-1]
+        return img_out, boxes
