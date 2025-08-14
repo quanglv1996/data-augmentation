@@ -6,120 +6,40 @@ import numpy as np
 import xml.etree.ElementTree as ET
 
 def draw_rect(im, cords, img_raw, color = None):
-    """Draw the rectangle on the image
-    
-    Parameters
-    ----------
-    
-    im : numpy.ndarray
-        numpy image 
-    
-    cords: numpy.ndarray
-        Numpy array containing bounding boxes of shape `N X 4` where N is the 
-        number of bounding boxes and the bounding boxes are represented in the
-        format `x1 y1 x2 y2`
-        
-    Returns
-    -------
-    
-    numpy.ndarray
-        numpy image with bounding boxes drawn on it
-        
-    """
     im = im.copy()
     cords = np.array(cords)
     if len(im.shape) == 2:
         im = cv2.cvtColor(im, cv2.COLOR_GRAY2RGB)
-    
-    cords = cords[:,:4]
-    cords = cords.reshape(-1,4)
-    if not color:
-        color = [0,255,0]
+    cords = cords[:,:4].reshape(-1,4)
+    color = color if color else [0,255,0]
     for cord in cords:
-        
-        pt1, pt2 = (cord[0], cord[1]) , (cord[2], cord[3])
-        pt1 = int(pt1[0]), int(pt1[1])
-        pt2 = int(pt2[0]), int(pt2[1])
-    
+        pt1 = int(cord[0]), int(cord[1])
+        pt2 = int(cord[2]), int(cord[3])
         im = cv2.rectangle(im, pt1, pt2, color, int(max(im.shape[:2])/400))
-        
-    img_debug = np.vstack((img_raw, im))
-    cv2.imwrite('_debug_img.jpg', img_debug)
+    return im
     
     
 def bbox_area(bbox):
-    return (bbox[:,2] - bbox[:,0])*(bbox[:,3] - bbox[:,1])
+    if bbox.shape[0] == 0:
+        return np.array([])
+    return (bbox[:,2] - bbox[:,0]) * (bbox[:,3] - bbox[:,1])
 
 
 def clip_box(bbox, clip_box, alpha):
-    """Clip the bounding boxes to the borders of an image
-    
-    Parameters
-    ----------
-    
-    bbox: numpy.ndarray
-        Numpy array containing bounding boxes of shape `N X 4` where N is the 
-        number of bounding boxes and the bounding boxes are represented in the
-        format `x1 y1 x2 y2`
-    
-    clip_box: numpy.ndarray
-        An array of shape (4,) specifying the diagonal co-ordinates of the image
-        The coordinates are represented in the format `x1 y1 x2 y2`
-        
-    alpha: float
-        If the fraction of a bounding box left in the image after being clipped is 
-        less than `alpha` the bounding box is dropped. 
-    
-    Returns
-    -------
-    
-    numpy.ndarray
-        Numpy array containing **clipped** bounding boxes of shape `N X 4` where N is the 
-        number of bounding boxes left are being clipped and the bounding boxes are represented in the
-        format `x1 y1 x2 y2` 
-    
-    """
-    ar_ = (bbox_area(bbox))
+    if bbox.shape[0] == 0:
+        return bbox
+    ar_ = bbox_area(bbox)
     x_min = np.maximum(bbox[:,0], clip_box[0]).reshape(-1,1)
     y_min = np.maximum(bbox[:,1], clip_box[1]).reshape(-1,1)
     x_max = np.minimum(bbox[:,2], clip_box[2]).reshape(-1,1)
     y_max = np.minimum(bbox[:,3], clip_box[3]).reshape(-1,1)
-    
     bbox = np.hstack((x_min, y_min, x_max, y_max, bbox[:,4:]))
-    
     delta_area = ((ar_ - bbox_area(bbox))/ar_)
-    
-    mask = (delta_area < (1 - alpha)).astype(int)
-    
-    bbox = bbox[mask == 1,:]
-
-
-    return bbox
+    mask = (delta_area < (1 - alpha))
+    return bbox[mask]
 
 
 def rotate_im(image, angle):
-    """Rotate the image.
-    
-    Rotate the image such that the rotated image is enclosed inside the tightest
-    rectangle. The area not occupied by the pixels of the original image is colored
-    black. 
-    
-    Parameters
-    ----------
-    
-    image : numpy.ndarray
-        numpy image
-    
-    angle : float
-        angle by which the image is to be rotated
-    
-    Returns
-    -------
-    
-    numpy.ndarray
-        Rotated Image
-    
-    """
     # grab the dimensions of the image and then determine the
     # centre
     (h, w) = image.shape[:2]
@@ -148,25 +68,6 @@ def rotate_im(image, angle):
 
 
 def get_corners(bboxes):
-    
-    """Get corners of bounding boxes
-    
-    Parameters
-    ----------
-    
-    bboxes: numpy.ndarray
-        Numpy array containing bounding boxes of shape `N X 4` where N is the 
-        number of bounding boxes and the bounding boxes are represented in the
-        format `x1 y1 x2 y2`
-    
-    returns
-    -------
-    
-    numpy.ndarray
-        Numpy array of shape `N x 8` containing N bounding boxes each described by their 
-        corner co-ordinates `x1 y1 x2 y2 x3 y3 x4 y4`      
-        
-    """
     width = (bboxes[:,2] - bboxes[:,0]).reshape(-1,1)
     height = (bboxes[:,3] - bboxes[:,1]).reshape(-1,1)
     
@@ -188,40 +89,6 @@ def get_corners(bboxes):
 
 
 def rotate_box(corners,angle,  cx, cy, h, w):
-    
-    """Rotate the bounding box.
-    
-    
-    Parameters
-    ----------
-    
-    corners : numpy.ndarray
-        Numpy array of shape `N x 8` containing N bounding boxes each described by their 
-        corner co-ordinates `x1 y1 x2 y2 x3 y3 x4 y4`
-    
-    angle : float
-        angle by which the image is to be rotated
-        
-    cx : int
-        x coordinate of the center of image (about which the box will be rotated)
-        
-    cy : int
-        y coordinate of the center of image (about which the box will be rotated)
-        
-    h : int 
-        height of the image
-        
-    w : int 
-        width of the image
-    
-    Returns
-    -------
-    
-    numpy.ndarray
-        Numpy array of shape `N x 8` containing N rotated bounding boxes each described by their 
-        corner co-ordinates `x1 y1 x2 y2 x3 y3 x4 y4`
-    """
-
     corners = corners.reshape(-1,2)
     corners = np.hstack((corners, np.ones((corners.shape[0],1), dtype = type(corners[0][0]))))
     
@@ -245,24 +112,6 @@ def rotate_box(corners,angle,  cx, cy, h, w):
 
 
 def get_enclosing_box(corners):
-    """Get an enclosing box for ratated corners of a bounding box
-    
-    Parameters
-    ----------
-    
-    corners : numpy.ndarray
-        Numpy array of shape `N x 8` containing N bounding boxes each described by their 
-        corner co-ordinates `x1 y1 x2 y2 x3 y3 x4 y4`  
-    
-    Returns 
-    -------
-    
-    numpy.ndarray
-        Numpy array containing enclosing bounding boxes of shape `N X 4` where N is the 
-        number of bounding boxes and the bounding boxes are represented in the
-        format `x1 y1 x2 y2`
-        
-    """
     x_ = corners[:,[0,2,4,6]]
     y_ = corners[:,[1,3,5,7]]
     
@@ -277,25 +126,6 @@ def get_enclosing_box(corners):
 
 
 def letterbox_image(img, inp_dim):
-    '''resize image with unchanged aspect ratio using padding
-    
-    Parameters
-    ----------
-    
-    img : numpy.ndarray
-        Image 
-    
-    inp_dim: tuple(int)
-        shape of the reszied image
-        
-    Returns
-    -------
-    
-    numpy.ndarray:
-        Resized image
-    
-    '''
-
     inp_dim = (inp_dim, inp_dim)
     img_w, img_h = img.shape[1], img.shape[0]
     w, h = inp_dim
@@ -311,16 +141,6 @@ def letterbox_image(img, inp_dim):
 
 
 def get_info_bbox_pascalvoc(xml_path, label_mapping):
-    """
-    Extracts bounding box information from an XML file.
-
-    Args:
-        xml_path (str): The path to the XML file containing bounding box information.
-        label_mapping (dict): A dictionary that maps class names to their corresponding class IDs.
-
-    Returns:
-        numpy.ndarray: An array containing bounding box coordinates and class IDs.
-    """
     bboxes = []
     # Read the contents of the XML file
     xml_text = ET.parse(xml_path)
@@ -352,16 +172,6 @@ def get_info_bbox_pascalvoc(xml_path, label_mapping):
 import numpy as np
 
 def get_info_bbox_yolo(img, txt_path):
-    """
-    Extracts bounding box information from a YOLO format file and converts it to a numpy array.
-
-    Parameters:
-        img (numpy.ndarray): The input image as a numpy array.
-        txt_path (str): Path to the YOLO format file containing bounding box information.
-
-    Returns:
-        numpy.ndarray: An array containing bounding box information in the format: [xmin, ymin, xmax, ymax, class_id].
-    """
     # List to store the bounding boxes and their corresponding class information
     bboxes = []
     
@@ -396,35 +206,10 @@ def get_info_bbox_yolo(img, txt_path):
 
 
 def create_folder(path):
-    """
-    Create a new folder at the specified path or remove and recreate it if it already exists.
-
-    Args:
-        path (str): The path of the folder to be created.
-
-    Returns:
-        None
-    """
-    # Check if the folder already exists
-    if os.path.exists(path):
-        # If it exists, remove it and its contents
-        shutil.rmtree(path)
-    
-    # Create a new folder at the specified path
-    os.mkdir(path)
+    os.makedirs(path, exist_ok=True)
     
     
 def bndbox2yololine(box, img):
-    """
-    Convert bounding box coordinates to YOLO format.
-
-    Args:
-        box (numpy array): An array representing the bounding box in the format [xmin, ymin, xmax, ymax, class_id].
-        img (numpy array): The input image as a numpy array.
-
-    Returns:
-        tuple: A tuple representing the bounding box in YOLO format (class_id, xcen, ycen, w_, h_).
-    """
     # Unpack the bounding box coordinates and class ID
     xmin, ymin, xmax, ymax, id_class = box
     
@@ -444,14 +229,6 @@ def bndbox2yololine(box, img):
 
 
 def save_yolo_format(img ,bboxes, path_save_img, path_save_label):
-    """
-    Save bounding boxes in YOLO format to a file.
-
-    Args:
-        path_save (str): The path to save the YOLO format file.
-        bboxes (numpy array): An array representing the bounding boxes in the format [xmin, ymin, xmax, ymax, class_id].
-        img (numpy array): The input image as a numpy array.
-    """
     # Open the output file in write mode
 
     name = format(random.getrandbits(128), 'x')
@@ -470,17 +247,6 @@ def save_yolo_format(img ,bboxes, path_save_img, path_save_label):
 
 
 def yolo_to_cor(box, w, h):
-    """
-    Convert YOLO format bounding box coordinates to (x1, y1, x2, y2) format.
-
-    Parameters:
-        box (tuple): A tuple containing the YOLO format bounding box information (x, y, width, height).
-        w (int): The width of the image in pixels.
-        h (int): The height of the image in pixels.
-
-    Returns:
-        tuple: A tuple containing the bounding box coordinates in (x1, y1, x2, y2) format.
-    """
     # Extract YOLO format bounding box information (x, y, width, height)
     x, y, width, height = box
     
@@ -498,19 +264,6 @@ def yolo_to_cor(box, w, h):
 
 
 def create_xml_tree(path_img, w, h, voc_labels):
-    """
-    Create an XML tree for object annotations in VOC format.
-
-    Parameters:
-        path_img (str): The path to the image file.
-        w (int): The width of the image.
-        h (int): The height of the image.
-        voc_labels (list): A list of tuples containing VOC label information.
-                           Each tuple should have the format (label_name, xmin, ymin, xmax, ymax).
-
-    Returns:
-        xml.etree.ElementTree.Element: The root element of the XML tree.
-    """
     # Create the root element
     root = ET.Element("annotations")
     ET.SubElement(root, "filename").text = path_img
@@ -537,20 +290,6 @@ def create_xml_tree(path_img, w, h, voc_labels):
 
 
 def save_pascalvoc_format(img, bboxes, path_save_img, path_save_label, mapping_labels):
-    """
-    Save object annotations and image in Pascal VOC format.
-
-    Parameters:
-        img (numpy.ndarray): The input image.
-        bboxes (numpy.ndarray): An array containing bounding box information for objects in the image.
-                                Each row in the array should contain (xmin, ymin, xmax, ymax, _, id_class, _).
-        path_save_img (str): The path to save the image file.
-        path_save_label (str): The path to save the annotation file in XML format.
-        mapping_labels (dict): A dictionary mapping class IDs to class names.
-
-    Returns:
-        None
-    """
     name = format(random.getrandbits(128), 'x')
     img_path = os.path.join(path_save_img, name + '.jpg')
     xml_path = os.path.join(path_save_label, name + '.xml')
