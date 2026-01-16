@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  webapp:
+    build: .
+    container_name: data-augmentation-webapp
+    ports:
+      - "222:222"
+    volumes:
+      - ./webapp/uploads:/app/webapp/uploads
+      - ./webapp/outputs:/app/webapp/outputs
+      - ./webapp/tasks.db:/app/webapp/tasks.db
+    environment:
+      - FLASK_ENV=production
+    restart: unless-stopped
+    networks:
+      - augmentation-network
+
+networks:
+  augmentation-network:
+    driver: bridge

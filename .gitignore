@@ -161,3 +161,8 @@ cython_debug/
 #.idea/
 data/
 datasets/
+outputs/
+logs/
+static/
+templates/
+uploads/

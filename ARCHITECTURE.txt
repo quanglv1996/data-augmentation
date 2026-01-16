@@ -1,0 +1,167 @@
+╔═══════════════════════════════════════════════════════════════════════╗
+║         DATA AUGMENTATION WEB APPLICATION - ARCHITECTURE             ║
+╚═══════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                          USER INTERFACE                             │
+│                      (Browser - Port 222)                           │
+│                                                                     │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐             │
+│  │   Upload     │  │ Augmentation │  │   History    │             │
+│  │     Tab      │  │  Selection   │  │     Tab      │             │
+│  └──────────────┘  └──────────────┘  └──────────────┘             │
+│                                                                     │
+│  Features:                                                          │
+│  • Upload images & labels (YOLO/VOC)                               │
+│  • Select augmentations (checkbox)                                 │
+│  • Preview with random sample                                      │
+│  • Apply augmentation to all                                       │
+│  • Download results (ZIP)                                          │
+│  • View task history                                               │
+│  • Re-augment with different options                               │
+│  • Delete tasks                                                    │
+└─────────────────────────────────────────────────────────────────────┘
+                               ▲ │
+                               │ │ HTTP/REST API
+                               │ ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                        FLASK APPLICATION                            │
+│                           (app.py)                                  │
+│                                                                     │
+│  API Endpoints:                                                     │
+│  ┌────────────────────────────────────────────────────────────┐    │
+│  │ GET  /                         → Main page                 │    │
+│  │ GET  /api/augmentations        → List augmentations        │    │
+│  │ POST /api/upload               → Upload files              │    │
+│  │ POST /api/preview/<task_id>    → Generate preview          │    │
+│  │ POST /api/augment/<task_id>    → Apply augmentation        │    │
+│  │ GET  /api/download/<output_id> → Download results          │    │
+│  │ GET  /api/tasks                → Get all tasks             │    │
+│  │ DEL  /api/tasks/<task_id>      → Delete task               │    │
+│  └────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────┘
+           │                      │                      │
+           │                      │                      │
+           ▼                      ▼                      ▼
+┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
+│   DATABASE       │  │   AUGMENTATION   │  │   FILE SYSTEM    │
+│   (database.py)  │  │     SERVICE      │  │                  │
+│                  │  │ (augmentation_   │  │                  │
+│  ┌────────────┐  │  │    service.py)   │  │  ┌────────────┐  │
+│  │   Tasks    │  │  │                  │  │  │  uploads/  │  │
+│  │   Table    │  │  │  ┌────────────┐  │  │  │  outputs/  │  │
+│  │            │  │  │  │  Pipeline  │  │  │  └────────────┘  │
+│  │ • task_id  │  │  │  │  Builder   │  │  │                  │
+│  │ • name     │  │  │  └────────────┘  │  │  Storage:        │
+│  │ • format   │  │  │                  │  │  • Images        │
+│  │ • count    │  │  │  Functions:      │  │  • Labels        │
+│  │ • created  │  │  │  • Preview       │  │  • Previews      │
+│  └────────────┘  │  │  • Apply         │  │  • Results       │
+│                  │  │  • Save labels   │  │                  │
+│  ┌────────────┐  │  │  • Draw bbox     │  │                  │
+│  │Augmentation│  │  └──────────────────┘  │                  │
+│  │   Table    │  │           │             │                  │
+│  │            │  │           │             │                  │
+│  │ • id       │  │           ▼             │                  │
+│  │ • task_id  │  │  ┌──────────────────┐  │                  │
+│  │ • output   │  │  │  AUGMENTATION    │  │                  │
+│  │ • augs     │  │  │    MODULES       │  │                  │
+│  │ • count    │  │  │                  │  │                  │
+│  │ • created  │  │  │  augmentations/  │  │                  │
+│  └────────────┘  │  │                  │  │                  │
+│                  │  │  • brightness    │  │                  │
+│  SQLite DB       │  │  • contrast      │  │                  │
+│  tasks.db        │  │  • saturation    │  │                  │
+│                  │  │  • flip          │  │                  │
+│  Persistent      │  │  • rotate        │  │                  │
+│  storage for:    │  │  • scale         │  │                  │
+│  • Task info     │  │  • shear         │  │                  │
+│  • Aug history   │  │  • translate     │  │                  │
+│  • Re-augment    │  │  • cutout        │  │                  │
+└──────────────────┘  │  • grid_mask     │  │                  │
+                      │  • hsv           │  │                  │
+                      │  • noise         │  │                  │
+                      │  • sequence      │  │                  │
+                      │                  │  │                  │
+                      │  utils/          │  │                  │
+                      │  • draw_rect     │  │                  │
+                      │  • bbox utils    │  │                  │
+                      └──────────────────┘  └──────────────────┘
+
+╔═══════════════════════════════════════════════════════════════════════╗
+║                         DATA FLOW                                     ║
+╚═══════════════════════════════════════════════════════════════════════╝
+
+1. UPLOAD WORKFLOW:
+   User → Upload Form → Flask → Save to uploads/ → Store in DB → Return task_id
+
+2. PREVIEW WORKFLOW:
+   User → Select Augs → Flask → Augmentation Service → Random Sample
+   → Apply Augs → Draw BBoxes → Save Preview → Return Image URLs
+
+3. AUGMENTATION WORKFLOW:
+   User → Apply Augs → Flask → Augmentation Service → Process All Images
+   → Apply Pipeline → Save to outputs/ → Store in DB → Return output_id
+
+4. DOWNLOAD WORKFLOW:
+   User → Download → Flask → Create ZIP from outputs/ → Send File
+
+5. HISTORY WORKFLOW:
+   User → View History → Flask → Query DB → Return Tasks + Augmentations
+
+6. RE-AUGMENTATION WORKFLOW:
+   User → Select Task → Choose New Augs → Flask → Use Original uploads/
+   → Apply New Pipeline → Save New Output → Update DB
+
+╔═══════════════════════════════════════════════════════════════════════╗
+║                      DEPLOYMENT ARCHITECTURE                          ║
+╚═══════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                         DOCKER CONTAINER                            │
+│                                                                     │
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │  Python 3.9 Runtime                                          │  │
+│  │                                                              │  │
+│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐            │  │
+│  │  │   Flask    │  │   OpenCV   │  │   NumPy    │            │  │
+│  │  │   Server   │  │            │  │            │            │  │
+│  │  └────────────┘  └────────────┘  └────────────┘            │  │
+│  │                                                              │  │
+│  │  Application Code:                                           │  │
+│  │  /app/webapp/                                                │  │
+│  │                                                              │  │
+│  │  Volumes (Persistent):                                       │  │
+│  │  • ./webapp/uploads:/app/webapp/uploads                      │  │
+│  │  • ./webapp/outputs:/app/webapp/outputs                      │  │
+│  │  • ./webapp/tasks.db:/app/webapp/tasks.db                    │  │
+│  └──────────────────────────────────────────────────────────────┘  │
+│                                                                     │
+│  Port Mapping: Host:222 → Container:222                            │
+└─────────────────────────────────────────────────────────────────────┘
+
+                               ▲ │
+                               │ │ Port 222
+                               │ ▼
+
+                         ┌─────────────┐
+                         │   BROWSER   │
+                         │             │
+                         │ localhost:  │
+                         │    222      │
+                         └─────────────┘
+
+╔═══════════════════════════════════════════════════════════════════════╗
+║                      KEY FEATURES SUMMARY                             ║
+╚═══════════════════════════════════════════════════════════════════════╝
+
+✅ Upload: Images + Labels (YOLO/VOC)
+✅ Select: 12 Augmentation methods via checkboxes
+✅ Preview: Random sample with before/after + bboxes
+✅ Apply: Process entire dataset
+✅ Download: ZIP file with augmented data
+✅ History: View all tasks and augmentations
+✅ Re-augment: Apply different augmentations to same dataset
+✅ Delete: Remove tasks and data
+✅ Docker: Containerized deployment on port 222
+✅ Persistent: SQLite DB + Volume mounting

@@ -184,7 +184,12 @@ def get_info_bbox_yolo(img, txt_path):
 
     for line in lines:
         # Extract bounding box information from the line
-        id_class, x, y, width, height = map(float, line.strip().split())
+        # Handle both standard YOLO format (5 values) and extended formats (more than 5 values)
+        values = line.strip().split()
+        if len(values) < 5:
+            continue  # Skip invalid lines
+        
+        id_class, x, y, width, height = map(float, values[:5])  # Take only first 5 values
         id_class = int(id_class)
         
         # Calculate the coordinates of the bounding box on the image
