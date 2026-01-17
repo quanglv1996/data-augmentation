@@ -19,8 +19,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application files
 COPY . .
 
+# Set working directory to webapp folder
+WORKDIR /app/webapp
+
 # Create necessary directories
-RUN mkdir -p webapp/uploads webapp/outputs
+RUN mkdir -p uploads outputs
 
 # Expose port
 EXPOSE 2222
@@ -29,4 +32,4 @@ EXPOSE 2222
 ENV FLASK_ENV=production
 
 # Run the application
-CMD ["python", "webapp/app.py"]
+CMD ["python", "app.py"]
