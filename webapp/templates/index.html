@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Augmentation Web App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🖼️ Data Augmentation Web App</h1>
+            <p>Ứng dụng tăng cường dữ liệu hình ảnh với Object Detection</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Tab Navigation -->
+            <div class="tabs">
+                <button class="tab-button active" data-tab="upload">📤 Tải ảnh lên</button>
+                <button class="tab-button" data-tab="history">📜 Lịch sử</button>
+            </div>
+
+            <!-- Upload Tab -->
+            <div id="upload-tab" class="tab-content active">
+                <div class="upload-section">
+                    <h2>Tải dữ liệu lên</h2>
+                    
+                    <div class="form-group">
+                        <label for="task-name">Tên task:</label>
+                        <input type="text" id="task-name" placeholder="Nhập tên task...">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="label-format">Định dạng nhãn:</label>
+                        <select id="label-format">
+                            <option value="yolo">YOLO (.txt)</option>
+                            <option value="voc">Pascal VOC (.xml)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="images-input">Chọn ảnh:</label>
+                        <input type="file" id="images-input" multiple accept="image/*">
+                        <small>Chọn nhiều file ảnh (PNG, JPG, JPEG, BMP)</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="labels-input">Chọn nhãn:</label>
+                        <input type="file" id="labels-input" multiple>
+                        <small>Chọn file nhãn tương ứng (.txt hoặc .xml)</small>
+                    </div>
+
+                    <button id="upload-btn" class="btn btn-primary">📤 Tải lên</button>
+                </div>
+
+                <!-- Augmentation Selection -->
+                <div id="augmentation-section" class="augmentation-section" style="display: none;">
+                    <h2>Chọn phương pháp Augmentation</h2>
+                    <div id="augmentation-list" class="augmentation-grid"></div>
+                    
+                    <div class="action-buttons">
+                        <button id="preview-btn" class="btn btn-secondary">👁️ Xem trước</button>
+                        <button id="apply-btn" class="btn btn-success">✨ Áp dụng Augmentation</button>
+                    </div>
+                </div>
+
+                <!-- Preview Section -->
+                <div id="preview-section" class="preview-section" style="display: none;">
+                    <h2>Xem trước kết quả</h2>
+                    <div class="preview-container"></div>
+                </div>
+
+                <!-- Results Section -->
+                <div id="results-section" class="results-section" style="display: none;">
+                    <h2>Kết quả</h2>
+                    <div class="results-info"></div>
+                </div>
+            </div>
+
+            <!-- History Tab -->
+            <div id="history-tab" class="tab-content">
+                <h2>Lịch sử Tasks</h2>
+                <div id="task-list" class="task-list"></div>
+            </div>
+        </div>
+
+        <!-- Modal for Re-augmentation -->
+        <div id="reaugment-modal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Augmentation lại</h2>
+                <div id="reaugment-list" class="augmentation-grid"></div>
+                <div class="action-buttons">
+                    <button id="reaugment-apply-btn" class="btn btn-success">✨ Áp dụng</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Đang xử lý...</p>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
