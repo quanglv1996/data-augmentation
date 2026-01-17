@@ -23,7 +23,10 @@ COPY . .
 RUN mkdir -p webapp/uploads webapp/outputs
 
 # Expose port
-EXPOSE 222
+EXPOSE 2222
+
+# Set environment variable
+ENV FLASK_ENV=production
 
 # Run the application
 CMD ["python", "webapp/app.py"]

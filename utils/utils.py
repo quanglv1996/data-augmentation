@@ -6,16 +6,48 @@ import numpy as np
 import xml.etree.ElementTree as ET
 
 def draw_rect(im, cords, img_raw, color = None):
+    """Draw bounding boxes on image"""
     im = im.copy()
-    cords = np.array(cords)
+    
+    # Handle empty bbox array
+    if cords is None or len(cords) == 0:
+        return im
+    
+    cords = np.array(cords, dtype=np.float32)
+    
+    # Handle single bbox (1D array)
+    if cords.ndim == 1:
+        if len(cords) >= 4:
+            cords = cords.reshape(1, -1)
+        else:
+            return im
+    
+    # Ensure we have at least 4 coordinates
+    if cords.shape[0] == 0 or cords.shape[1] < 4:
+        return im
+    
+    # Convert grayscale to RGB if needed
     if len(im.shape) == 2:
         im = cv2.cvtColor(im, cv2.COLOR_GRAY2RGB)
-    cords = cords[:,:4].reshape(-1,4)
-    color = color if color else [0,255,0]
+    
+    # Extract only x1, y1, x2, y2 (first 4 columns)
+    cords = cords[:, :4].reshape(-1, 4)
+    
+    # Set color
+    color = color if color else [0, 255, 0]  # Green
+    
+    # Draw each bbox
     for cord in cords:
-        pt1 = int(cord[0]), int(cord[1])
-        pt2 = int(cord[2]), int(cord[3])
-        im = cv2.rectangle(im, pt1, pt2, color, int(max(im.shape[:2])/400))
+        x1, y1, x2, y2 = cord
+        pt1 = (int(x1), int(y1))
+        pt2 = (int(x2), int(y2))
+        
+        # Calculate thickness based on image size
+        thickness = max(1, int(max(im.shape[:2]) / 400))
+        
+        # Draw rectangle
+        im = cv2.rectangle(im, pt1, pt2, color, thickness)
+    
     return im
     
     
@@ -189,17 +221,27 @@ def get_info_bbox_yolo(img, txt_path):
         if len(values) < 5:
             continue  # Skip invalid lines
         
-        id_class, x, y, width, height = map(float, values[:5])  # Take only first 5 values
+        # YOLO format: class_id x_center y_center width height (all normalized 0-1)
+        id_class, x_center, y_center, bbox_width, bbox_height = map(float, values[:5])
         id_class = int(id_class)
         
-        # Calculate the coordinates of the bounding box on the image
-        xmin = int((x - width / 2) * image.shape[1])
-        ymin = int((y - height / 2) * image.shape[0])
-        xmax = int((x + width / 2) * image.shape[1])
-        ymax = int((y + height / 2) * image.shape[0])
+        # Convert from YOLO format (normalized) to pixel coordinates
+        img_h, img_w = image.shape[:2]
+        
+        # Calculate pixel coordinates
+        xmin = int((x_center - bbox_width / 2) * img_w)
+        ymin = int((y_center - bbox_height / 2) * img_h)
+        xmax = int((x_center + bbox_width / 2) * img_w)
+        ymax = int((y_center + bbox_height / 2) * img_h)
+        
+        # Clip to image boundaries
+        xmin = max(0, min(xmin, img_w - 1))
+        ymin = max(0, min(ymin, img_h - 1))
+        xmax = max(0, min(xmax, img_w - 1))
+        ymax = max(0, min(ymax, img_h - 1))
         
         # Check the validity of the bounding box
-        if xmax < xmin or ymax < ymin:
+        if xmax <= xmin or ymax <= ymin:
             continue
         else:
             # Add the bounding box information and its class to the bboxes list

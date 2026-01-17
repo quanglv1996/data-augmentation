@@ -233,4 +233,7 @@ def serve_preview_image(filename):
     return send_from_directory(app.config['OUTPUT_FOLDER'], filename)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=2222, debug=True)
+    # Use environment variable or default to debug mode for local development
+    import os as env_os
+    debug_mode = env_os.environ.get('FLASK_ENV') != 'production'
+    app.run(host='0.0.0.0', port=2222, debug=debug_mode)
