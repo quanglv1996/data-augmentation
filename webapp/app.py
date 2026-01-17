@@ -17,7 +17,7 @@ from augmentation_service import AugmentationService
 from database import Database
 
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max
+app.config['MAX_CONTENT_LENGTH'] = 1000 * 1024 * 1024  # 100MB max
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['OUTPUT_FOLDER'] = 'outputs'
 app.config['DATABASE'] = 'tasks.db'
@@ -233,4 +233,4 @@ def serve_preview_image(filename):
     return send_from_directory(app.config['OUTPUT_FOLDER'], filename)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=222, debug=True)
+    app.run(host='0.0.0.0', port=2222, debug=True)
